@@ -1,0 +1,12 @@
+{
+  "name": "claro-proxy",
+  "version": "1.0.0",
+  "description": "Secure API proxy for Claro app",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
