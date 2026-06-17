@@ -3,7 +3,19 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
-<title>Claro</title>
+<title>Claro — speak clearly</title>
+<meta name="description" content="A quiet space to think clearly, feel understood, and move forward. Four AI companions for mental clarity."/>
+<meta name="theme-color" content="#F6F4F0" id="themeColorMeta"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="Claro"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icon-192.svg"/>
+<!-- Open Graph -->
+<meta property="og:title" content="Claro — speak clearly"/>
+<meta property="og:description" content="Four AI companions for mental clarity. Private by design."/>
+<meta property="og:type" content="website"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
 <style>
@@ -1007,6 +1019,8 @@ window.addEventListener('resize',psAll);
 function applyTheme(t){
   theme=t;localStorage.setItem('claro_theme',t);
   document.getElementById('app').classList.toggle('dark',t==='dark');
+  const mc=document.getElementById('themeColorMeta');
+  if(mc)mc.setAttribute('content',t==='dark'?'#111214':'#F6F4F0');
   const el=document.getElementById('sthS');if(el)el.textContent=T[lang].sthSf(t);
   const tog=document.getElementById('ttog'),knob=document.getElementById('tknob');
   if(tog)tog.style.background=t==='dark'?'var(--ac)':'var(--s2)';
@@ -1630,6 +1644,15 @@ function wbOther() {
     goTo('s2');
   }
 })();
+
+// ═══ PWA SERVICE WORKER ═══
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js')
+      .then(()=>console.log('Claro SW registered'))
+      .catch(e=>console.log('SW error:',e));
+  });
+}
 </script>
 </body>
 </html>

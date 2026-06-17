@@ -1,0 +1,8 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" fill="#F6F4F0"/>
+  <text font-family="Georgia, 'Times New Roman', serif" font-size="340" font-weight="300" fill="#5B8A94" x="256" y="360" text-anchor="middle">o</text>
+  <line x1="256" y1="122" x2="256" y2="170" stroke="#1A1F24" stroke-width="3.5" stroke-linecap="round"/>
+  <line x1="232" y1="146" x2="280" y2="146" stroke="#1A1F24" stroke-width="3.5" stroke-linecap="round"/>
+  <line x1="238" y1="128" x2="274" y2="164" stroke="#1A1F24" stroke-width="2" stroke-linecap="round"/>
+  <line x1="274" y1="128" x2="238" y2="164" stroke="#1A1F24" stroke-width="2" stroke-linecap="round"/>
+</svg>
