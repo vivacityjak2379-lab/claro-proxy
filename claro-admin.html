@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Claro Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:#111214;color:#E8E5DF;min-height:100vh;-webkit-font-smoothing:antialiased;}
+.login{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:1rem;padding:2rem;}
+.login-logo{font-family:'Cormorant Garamond',serif;font-size:42px;font-weight:300;color:#E8E5DF;}
+.login-logo span{color:#6BA8B4;}
+.login-sub{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#44484F;margin-bottom:.5rem;}
+.login-input{padding:.85rem 1.1rem;border-radius:12px;border:1px solid #22262B;background:#17191C;color:#E8E5DF;font-size:14px;font-family:'DM Sans',sans-serif;width:100%;max-width:300px;outline:none;}
+.login-input:focus{border-color:#5B8A94;}
+.login-btn{padding:.85rem 2rem;border-radius:50px;border:none;background:#E8E5DF;color:#111214;font-size:14px;font-family:'DM Sans',sans-serif;cursor:pointer;width:100%;max-width:300px;}
+.login-err{font-size:13px;color:#b04040;display:none;}
+
+.app{display:none;flex-direction:column;min-height:100vh;}
+.topbar{padding:1rem 1.5rem;border-bottom:1px solid #1E2226;display:flex;align-items:center;justify-content:space-between;}
+.topbar-logo{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;}
+.topbar-logo span{color:#6BA8B4;}
+.topbar-right{display:flex;align-items:center;gap:.75rem;}
+.topbar-badge{font-size:11px;padding:3px 10px;border-radius:20px;background:#0F2226;color:#6BA8B4;border:1px solid #163038;}
+.logout-btn{font-size:12px;color:#44484F;background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.logout-btn:hover{color:#88867F;}
+
+.main{padding:1.5rem;max-width:1000px;margin:0 auto;width:100%;}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.5rem;}
+.stat{background:#17191C;border:1px solid #1E2226;border-radius:12px;padding:1rem 1.25rem;}
+.stat-n{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:300;color:#E8E5DF;}
+.stat-l{font-size:12px;color:#44484F;margin-top:2px;}
+
+/* SEARCH */
+.search-bar{display:flex;gap:.75rem;margin-bottom:1.25rem;}
+.search-input{flex:1;padding:.75rem 1rem;border-radius:10px;border:1px solid #1E2226;background:#17191C;color:#E8E5DF;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;}
+.search-input:focus{border-color:#3D6B74;}
+.search-btn{padding:.75rem 1.25rem;border-radius:10px;border:none;background:#5B8A94;color:#fff;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;}
+
+/* USER DETAIL */
+.user-detail{background:#17191C;border:1px solid #1E2226;border-radius:14px;padding:1.25rem;margin-bottom:1.25rem;display:none;}
+.ud-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem;}
+.ud-uid{font-size:12px;color:#44484F;font-family:monospace;margin-bottom:.25rem;}
+.ud-email{font-size:15px;color:#E8E5DF;font-weight:400;}
+.ud-badge{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:500;}
+.ud-badge.pro{background:#251A10;color:#C4956A;border:1px solid rgba(196,149,106,.3);}
+.ud-badge.free{background:#1E2226;color:#44484F;}
+.ud-fields{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1rem;}
+.ud-field{background:#111214;border-radius:8px;padding:.65rem .85rem;}
+.ud-field-l{font-size:10px;color:#44484F;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px;}
+.ud-field-v{font-size:13px;color:#88867F;font-family:monospace;}
+.ud-actions{display:flex;gap:.65rem;flex-wrap:wrap;}
+.action-btn{padding:.55rem 1rem;border-radius:20px;border:1px solid #22262B;background:transparent;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .18s;}
+.action-btn.pro{color:#C4956A;border-color:rgba(196,149,106,.3);}
+.action-btn.pro:hover{background:#251A10;}
+.action-btn.free{color:#b04040;border-color:rgba(176,64,64,.3);}
+.action-btn.free:hover{background:#1A0F0F;}
+.action-btn.contact{color:#6BA8B4;border-color:#163038;}
+.action-btn.contact:hover{background:#0F2226;}
+
+/* USERS TABLE */
+.table-wrap{background:#17191C;border:1px solid #1E2226;border-radius:14px;overflow:hidden;}
+.table-header{padding:.75rem 1.1rem;border-bottom:1px solid #1E2226;display:grid;grid-template-columns:1fr 2fr 80px 140px;gap:1rem;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#44484F;}
+.table-row{padding:.75rem 1.1rem;border-bottom:1px solid #1E2226;display:grid;grid-template-columns:1fr 2fr 80px 140px;gap:1rem;align-items:center;cursor:pointer;transition:background .15s;}
+.table-row:last-child{border-bottom:none;}
+.table-row:hover{background:#1E2226;}
+.table-row.selected{background:#0F2226;border-left:2px solid #5B8A94;}
+.tr-uid{font-size:11px;color:#44484F;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tr-email{font-size:13px;color:#88867F;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tr-plan{font-size:11px;padding:2px 8px;border-radius:20px;text-align:center;font-weight:500;}
+.tr-plan.pro{background:#251A10;color:#C4956A;}
+.tr-plan.free{background:#1E2226;color:#44484F;}
+.tr-date{font-size:11px;color:#44484F;font-family:monospace;}
+.empty{padding:2rem;text-align:center;color:#44484F;font-size:13px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;padding:.75rem 1.25rem;border-radius:12px;background:#5B8A94;color:#fff;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;}
+.toast.show{opacity:1;}
+
+/* REFRESH */
+.refresh-btn{padding:.55rem 1rem;border-radius:20px;border:1px solid #22262B;background:transparent;font-size:12px;color:#88867F;font-family:'DM Sans',sans-serif;cursor:pointer;}
+.refresh-btn:hover{border-color:#3D6B74;color:#6BA8B4;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login" id="loginScreen">
+  <div class="login-logo">Clar<span>o</span></div>
+  <div class="login-sub">Admin Panel</div>
+  <input class="login-input" type="password" id="pwdInput" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()"/>
+  <button class="login-btn" onclick="doLogin()">Sign in</button>
+  <div class="login-err" id="loginErr">Wrong password</div>
+</div>
+
+<!-- APP -->
+<div class="app" id="appScreen">
+  <div class="topbar">
+    <div class="topbar-logo">Clar<span>o</span> Admin</div>
+    <div class="topbar-right">
+      <div class="topbar-badge" id="proxyUrl">—</div>
+      <button class="logout-btn" onclick="logout()">Sign out</button>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- STATS -->
+    <div class="stats">
+      <div class="stat"><div class="stat-n" id="statTotal">—</div><div class="stat-l">Total users</div></div>
+      <div class="stat"><div class="stat-n" id="statPro" style="color:#C4956A;">—</div><div class="stat-l">Pro subscribers</div></div>
+      <div class="stat"><div class="stat-n" id="statFree">—</div><div class="stat-l">Free users</div></div>
+    </div>
+
+    <!-- SEARCH -->
+    <div class="search-bar">
+      <input class="search-input" type="text" id="searchInput" placeholder="Search by UID or email..." oninput="filterUsers()"/>
+      <button class="refresh-btn" onclick="loadData()">↻ Refresh</button>
+    </div>
+
+    <!-- USER DETAIL -->
+    <div class="user-detail" id="userDetail">
+      <div class="ud-header">
+        <div>
+          <div class="ud-uid" id="udUid">—</div>
+          <div class="ud-email" id="udEmail">—</div>
+        </div>
+        <div class="ud-badge free" id="udBadge">FREE</div>
+      </div>
+      <div class="ud-fields">
+        <div class="ud-field"><div class="ud-field-l">Created</div><div class="ud-field-v" id="udCreated">—</div></div>
+        <div class="ud-field"><div class="ud-field-l">Updated</div><div class="ud-field-v" id="udUpdated">—</div></div>
+        <div class="ud-field"><div class="ud-field-l">Stripe Customer</div><div class="ud-field-v" id="udStripe">—</div></div>
+        <div class="ud-field"><div class="ud-field-l">Subscription ID</div><div class="ud-field-v" id="udSub">—</div></div>
+      </div>
+      <div class="ud-actions">
+        <button class="action-btn pro" onclick="setPlan('pro')">✦ Grant Pro</button>
+        <button class="action-btn free" onclick="setPlan('free')">✕ Revoke Pro</button>
+        <button class="action-btn contact" onclick="contactUser()">✉ Email user</button>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-wrap">
+      <div class="table-header">
+        <div>User ID</div>
+        <div>Email</div>
+        <div>Plan</div>
+        <div>Created</div>
+      </div>
+      <div id="usersTable"><div class="empty">Loading...</div></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const PROXY = 'https://grand-respect-production-f3b0.up.railway.app';
+let adminPwd = '';
+let allUsers = [];
+let selectedUid = null;
+
+function doLogin() {
+  const pwd = document.getElementById('pwdInput').value;
+  adminPwd = pwd;
+  // Try to fetch stats to verify password
+  fetch(PROXY + '/admin/stats', {
+    headers: { 'x-admin-password': pwd }
+  }).then(r => {
+    if (r.ok) {
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('appScreen').style.display = 'flex';
+      document.getElementById('proxyUrl').textContent = 'Railway ✓';
+      loadData();
+    } else {
+      document.getElementById('loginErr').style.display = 'block';
+    }
+  }).catch(() => {
+    // If proxy not reachable, still allow local demo mode
+    document.getElementById('loginErr').textContent = 'Cannot reach proxy. Check URL.';
+    document.getElementById('loginErr').style.display = 'block';
+  });
+}
+
+function logout() {
+  adminPwd = '';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('appScreen').style.display = 'none';
+  document.getElementById('pwdInput').value = '';
+}
+
+async function loadData() {
+  try {
+    const [statsRes, usersRes] = await Promise.all([
+      fetch(PROXY + '/admin/stats', { headers: { 'x-admin-password': adminPwd } }),
+      fetch(PROXY + '/admin/users', { headers: { 'x-admin-password': adminPwd } })
+    ]);
+    const stats = await statsRes.json();
+    const data = await usersRes.json();
+    
+    document.getElementById('statTotal').textContent = stats.total || 0;
+    document.getElementById('statPro').textContent = stats.pro || 0;
+    document.getElementById('statFree').textContent = stats.free || 0;
+    
+    allUsers = data.users || [];
+    renderTable(allUsers);
+  } catch(e) {
+    toast('Error loading data: ' + e.message, true);
+  }
+}
+
+function renderTable(users) {
+  const el = document.getElementById('usersTable');
+  if (!users.length) {
+    el.innerHTML = '<div class="empty">No users found</div>';
+    return;
+  }
+  el.innerHTML = users.map(u => `
+    <div class="table-row ${u.uid === selectedUid ? 'selected' : ''}" onclick="selectUser('${u.uid}')">
+      <div class="tr-uid">${u.uid}</div>
+      <div class="tr-email">${u.email || '—'}</div>
+      <div><span class="tr-plan ${u.plan}">${u.plan.toUpperCase()}</span></div>
+      <div class="tr-date">${u.createdAt ? u.createdAt.slice(0,10) : '—'}</div>
+    </div>
+  `).join('');
+}
+
+function filterUsers() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  if (!q) { renderTable(allUsers); return; }
+  renderTable(allUsers.filter(u => 
+    u.uid.toLowerCase().includes(q) || 
+    (u.email || '').toLowerCase().includes(q)
+  ));
+}
+
+function selectUser(uid) {
+  selectedUid = uid;
+  const u = allUsers.find(x => x.uid === uid);
+  if (!u) return;
+  
+  document.getElementById('udUid').textContent = u.uid;
+  document.getElementById('udEmail').textContent = u.email || 'No email';
+  const badge = document.getElementById('udBadge');
+  badge.textContent = u.plan.toUpperCase();
+  badge.className = 'ud-badge ' + u.plan;
+  document.getElementById('udCreated').textContent = u.createdAt ? u.createdAt.slice(0,19).replace('T',' ') : '—';
+  document.getElementById('udUpdated').textContent = u.updatedAt ? u.updatedAt.slice(0,19).replace('T',' ') : '—';
+  document.getElementById('udStripe').textContent = u.stripeCustomerId || '—';
+  document.getElementById('udSub').textContent = u.subscriptionId || '—';
+  document.getElementById('userDetail').style.display = 'block';
+  renderTable(allUsers);
+}
+
+async function setPlan(plan) {
+  if (!selectedUid) return;
+  try {
+    const res = await fetch(PROXY + '/admin/users/' + selectedUid + '/plan', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'x-admin-password': adminPwd 
+      },
+      body: JSON.stringify({ plan })
+    });
+    if (res.ok) {
+      const u = allUsers.find(x => x.uid === selectedUid);
+      if (u) u.plan = plan;
+      selectUser(selectedUid);
+      renderTable(allUsers);
+      toast(plan === 'pro' ? '✦ Pro granted' : '✕ Pro revoked');
+    }
+  } catch(e) {
+    toast('Error: ' + e.message, true);
+  }
+}
+
+function contactUser() {
+  const u = allUsers.find(x => x.uid === selectedUid);
+  if (!u || !u.email) { toast('No email for this user', true); return; }
+  window.open('mailto:' + u.email + '?subject=Claro Support');
+}
+
+function toast(msg, isErr = false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.background = isErr ? '#b04040' : '#5B8A94';
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>

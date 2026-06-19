@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,viewport-fit=cover"/>
 <title>Claro — speak clearly</title>
 <meta name="description" content="A quiet space to think clearly, feel understood, and move forward. Four AI companions for mental clarity."/>
 <meta name="theme-color" content="#F6F4F0" id="themeColorMeta"/>
@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="Claro"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <link rel="manifest" href="manifest.json"/>
-<link rel="apple-touch-icon" href="icon-192.svg"/>
+<link rel="apple-touch-icon" href="apple-touch-icon.png"/>
 <!-- Open Graph -->
 <meta property="og:title" content="Claro — speak clearly"/>
 <meta property="og:description" content="Four AI companions for mental clarity. Private by design."/>
@@ -230,7 +230,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
 /* ─ INPUT ─ */
 .ia{padding:.78rem 1rem 1.25rem;border-top:1px solid var(--bd);background:var(--sf);flex-shrink:0;}
 .ir{display:flex;gap:7px;align-items:flex-end;}
-#userInput{flex:1;resize:none;border:1.5px solid var(--bd);border-radius:18px;padding:.65rem .9rem;font-size:14px;font-family:'DM Sans',sans-serif;font-weight:300;color:var(--tx);background:var(--s2);outline:none;line-height:1.5;min-height:42px;max-height:120px;transition:border-color .2s,box-shadow .2s;}
+#userInput{flex:1;resize:none;border:1.5px solid var(--bd);border-radius:18px;padding:.65rem .9rem;font-size:16px;font-family:'DM Sans',sans-serif;font-weight:300;color:var(--tx);background:var(--s2);outline:none;line-height:1.5;min-height:42px;max-height:120px;transition:border-color .2s,box-shadow .2s;}
 #userInput::placeholder{color:var(--t3);}
 #userInput:focus{border-color:var(--ac);background:var(--sf);box-shadow:0 0 0 3px var(--al);}
 .send{width:38px;height:38px;border-radius:50%;border:none;background:var(--tx);color:var(--sf);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;transition:opacity .15s,transform .12s;box-shadow:0 2px 6px rgba(0,0,0,.16);}
@@ -336,10 +336,421 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
 .wb-divider-txt{font-size:11px;color:var(--t3);letter-spacing:.06em;}
 .wb-other-btn{border:none;background:none;font-size:13px;color:var(--t2);cursor:pointer;font-family:'DM Sans',sans-serif;padding:.5rem;transition:color .15s;animation:wbFade .5s ease both;animation-delay:.42s;}
 .wb-other-btn:hover{color:var(--ac);}
+
+/* ─ SPLASH LOADER ─ */
+#splash{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--sf);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:0;
+  transition:opacity .6s ease, transform .6s ease;
+}
+#splash.hide{opacity:0;transform:scale(1.04);pointer-events:none;}
+#splash.gone{display:none;}
+
+.sp-wrap{position:relative;display:flex;flex-direction:column;align-items:center;gap:.5rem;}
+
+/* Star SVG animation */
+.sp-star{opacity:0;animation:spStarIn .7s cubic-bezier(.4,0,.2,1) .3s forwards;}
+@keyframes spStarIn{
+  from{opacity:0;transform:scale(.4) rotate(-30deg);}
+  to{opacity:1;transform:scale(1) rotate(0deg);}
+}
+
+/* Logo text animation */
+.sp-logo{
+  font-family:'Cormorant Garamond',serif;
+  font-size:68px;font-weight:300;
+  color:var(--tx);line-height:1;
+  overflow:hidden;
+}
+.sp-logo-inner{
+  display:block;
+  transform:translateY(100%);
+  animation:spLogoIn .7s cubic-bezier(.4,0,.2,1) .55s forwards;
+}
+@keyframes spLogoIn{
+  from{transform:translateY(100%);}
+  to{transform:translateY(0);}
+}
+.sp-logo .sp-o{color:var(--ac);}
+
+/* Tagline */
+.sp-tag{
+  font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--t3);
+  opacity:0;
+  animation:spTagIn .5s ease .95s forwards;
+}
+@keyframes spTagIn{
+  from{opacity:0;transform:translateY(6px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+/* Progress dot */
+.sp-dot{
+  width:4px;height:4px;border-radius:50%;
+  background:var(--ac);
+  margin-top:2.5rem;
+  opacity:0;
+  animation:spDotIn .4s ease 1.1s forwards, spDotPulse 1.2s ease 1.5s infinite;
+}
+@keyframes spDotIn{to{opacity:1;}}
+@keyframes spDotPulse{
+  0%,100%{transform:scale(1);opacity:.6;}
+  50%{transform:scale(1.6);opacity:1;}
+}
+
+/* ─ PRO WELCOME ─ */
+#proWelcome{
+  position:fixed;inset:0;z-index:8888;
+  background:var(--sf);
+  display:none;
+  flex-direction:column;align-items:center;justify-content:center;
+  padding:2.5rem 2rem;
+  opacity:0;transition:opacity .5s ease;
+}
+#proWelcome.show{display:flex;opacity:1;}
+#proWelcome.hide{opacity:0;pointer-events:none;}
+
+/* Confetti particles */
+.pro-confetti{
+  position:absolute;inset:0;pointer-events:none;overflow:hidden;
+}
+.pro-particle{
+  position:absolute;
+  width:4px;height:4px;
+  border-radius:50%;
+  animation:proParticle 1.8s ease-out forwards;
+}
+@keyframes proParticle{
+  0%{transform:translateY(0) scale(1);opacity:1;}
+  100%{transform:translateY(-120vh) scale(0);opacity:0;}
+}
+
+/* Star burst */
+.pro-star-wrap{
+  position:relative;display:flex;align-items:center;justify-content:center;
+  width:80px;height:80px;margin-bottom:1.5rem;
+}
+.pro-star-ring{
+  position:absolute;
+  width:80px;height:80px;
+  border-radius:50%;
+  border:1px solid var(--am);
+  animation:proRing 1.2s ease-out forwards;
+}
+.pro-star-ring:nth-child(2){
+  width:56px;height:56px;
+  animation-delay:.15s;
+  animation-duration:1s;
+}
+@keyframes proRing{
+  0%{transform:scale(0);opacity:0;}
+  50%{opacity:1;}
+  100%{transform:scale(1.4);opacity:0;}
+}
+.pro-star-svg{
+  animation:proStarSpin .8s cubic-bezier(.34,1.56,.64,1) .2s both;
+}
+@keyframes proStarSpin{
+  0%{transform:scale(0) rotate(-180deg);opacity:0;}
+  100%{transform:scale(1) rotate(0deg);opacity:1;}
+}
+
+/* Text */
+.pro-badge-pill{
+  display:inline-block;
+  font-size:10px;padding:3px 12px;border-radius:20px;
+  background:var(--gl);color:var(--gd);
+  letter-spacing:.1em;font-weight:500;
+  margin-bottom:.85rem;
+  animation:proFadeUp .5s ease .4s both;
+}
+.pro-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:38px;font-weight:300;
+  color:var(--tx);line-height:1.15;
+  text-align:center;margin-bottom:.5rem;
+  animation:proFadeUp .5s ease .5s both;
+}
+.pro-title span{color:var(--ac);}
+.pro-sub{
+  font-size:13px;color:var(--t2);font-weight:300;
+  text-align:center;line-height:1.7;
+  max-width:280px;margin-bottom:2rem;
+  animation:proFadeUp .5s ease .6s both;
+}
+
+/* Features list */
+.pro-feats{
+  display:flex;flex-direction:column;gap:10px;
+  width:100%;max-width:300px;margin-bottom:2rem;
+}
+.pro-feat{
+  display:flex;align-items:center;gap:11px;
+  padding:.75rem 1rem;
+  background:var(--s2);border-radius:12px;
+  border:1px solid var(--bd);
+  animation:proFeatIn .4s ease both;
+}
+.pro-feat:nth-child(1){animation-delay:.7s;}
+.pro-feat:nth-child(2){animation-delay:.82s;}
+.pro-feat:nth-child(3){animation-delay:.94s;}
+.pro-feat:nth-child(4){animation-delay:1.06s;}
+.pro-feat:nth-child(5){animation-delay:1.18s;}
+@keyframes proFeatIn{
+  0%{opacity:0;transform:translateX(-12px);}
+  100%{opacity:1;transform:translateX(0);}
+}
+.pro-feat-icon{
+  width:28px;height:28px;border-radius:8px;
+  background:var(--acl);display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.pro-feat-text{font-size:13px;color:var(--tx);font-weight:300;}
+.pro-feat-text strong{font-weight:500;}
+.pro-start-btn{
+  animation:proFadeUp .5s ease 1.3s both;
+}
+
+@keyframes proFadeUp{
+  0%{opacity:0;transform:translateY(10px);}
+  100%{opacity:1;transform:translateY(0);}
+}
+
+/* ─ PRO CELEBRATION ─ */
+#proCelebration{
+  position:fixed;inset:0;z-index:9998;
+  background:var(--sf);
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:2.5rem 2rem;
+}
+#proCelebration.show{display:flex;}
+
+/* Star burst animation */
+@keyframes proStarSpin{
+  0%{transform:scale(0) rotate(-90deg);opacity:0;}
+  60%{transform:scale(1.2) rotate(10deg);opacity:1;}
+  100%{transform:scale(1) rotate(0deg);opacity:1;}
+}
+@keyframes proFadeUp{
+  from{opacity:0;transform:translateY(16px);}
+  to{opacity:1;transform:translateY(0);}
+}
+@keyframes proGoldPulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(196,149,106,0);}
+  50%{box-shadow:0 0 0 12px rgba(196,149,106,.12);}
+}
+@keyframes proLineGrow{
+  from{width:0;}
+  to{width:48px;}
+}
+@keyframes proParticle{
+  0%{opacity:1;transform:translateY(0) scale(1);}
+  100%{opacity:0;transform:translateY(-40px) scale(0);}
+}
+
+.pro-star-wrap{
+  position:relative;
+  margin-bottom:1.5rem;
+  animation:proStarSpin .7s cubic-bezier(.34,1.56,.64,1) .1s both;
+}
+.pro-star-wrap svg{display:block;}
+
+/* Floating particles */
+.pro-particles{position:absolute;inset:-20px;pointer-events:none;}
+.pro-particle{
+  position:absolute;width:4px;height:4px;border-radius:50%;
+  background:var(--gd);opacity:0;
+}
+.pro-particle:nth-child(1){top:10%;left:20%;animation:proParticle .8s ease .5s both;}
+.pro-particle:nth-child(2){top:20%;right:15%;animation:proParticle .8s ease .6s both;}
+.pro-particle:nth-child(3){bottom:15%;left:25%;animation:proParticle .8s ease .7s both;}
+.pro-particle:nth-child(4){bottom:10%;right:20%;animation:proParticle .8s ease .55s both;}
+.pro-particle:nth-child(5){top:50%;left:5%;animation:proParticle .8s ease .65s both;}
+.pro-particle:nth-child(6){top:50%;right:5%;animation:proParticle .8s ease .75s both;}
+
+.pro-badge{
+  font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--gd);margin-bottom:.6rem;
+  animation:proFadeUp .5s ease .5s both;
+}
+.pro-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:38px;font-weight:300;color:var(--tx);
+  text-align:center;line-height:1.2;margin-bottom:.35rem;
+  animation:proFadeUp .5s ease .6s both;
+}
+.pro-title span{color:var(--gd);}
+.pro-sub{
+  font-size:13px;color:var(--t2);font-weight:300;
+  text-align:center;margin-bottom:2rem;
+  animation:proFadeUp .5s ease .7s both;
+}
+.pro-line{
+  height:1px;background:var(--gd);width:0;
+  margin-bottom:2rem;
+  animation:proLineGrow .6s ease .8s both;
+  opacity:.3;
+}
+.pro-features{
+  display:flex;flex-direction:column;gap:.75rem;
+  width:100%;max-width:280px;margin-bottom:2.5rem;
+  animation:proFadeUp .5s ease .85s both;
+}
+.pro-feat{
+  display:flex;align-items:center;gap:.85rem;
+  padding:.7rem .9rem;
+  background:var(--gl);
+  border:1px solid rgba(196,149,106,.2);
+  border-radius:12px;
+}
+.pro-feat-icon{
+  width:28px;height:28px;border-radius:8px;
+  background:rgba(196,149,106,.15);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.pro-feat-text{font-size:13px;color:var(--tx);font-weight:300;}
+.pro-feat-text strong{font-weight:500;color:var(--gd);}
+.pro-btn{
+  padding:.85rem 2.5rem;border-radius:50px;border:none;
+  background:var(--tx);color:var(--sf);
+  font-size:14px;font-family:'DM Sans',sans-serif;
+  cursor:pointer;transition:opacity .18s,transform .14s;
+  box-shadow:0 2px 12px rgba(0,0,0,.15);
+  animation:proFadeUp .5s ease 1s both;
+}
+.pro-btn:hover{opacity:.87;transform:translateY(-1px);}
 </style>
 </head>
 <body>
 <div class="app" id="app">
+
+<!-- PRO CELEBRATION -->
+<div id="proCelebration">
+  <div class="pro-star-wrap">
+    <div class="pro-particles">
+      <div class="pro-particle"></div>
+      <div class="pro-particle"></div>
+      <div class="pro-particle"></div>
+      <div class="pro-particle"></div>
+      <div class="pro-particle"></div>
+      <div class="pro-particle"></div>
+    </div>
+    <svg width="64" height="64" viewBox="0 0 14 14" fill="none">
+      <line x1="7" y1="1" x2="7" y2="13" stroke="#C4956A" stroke-width="1.4"/>
+      <line x1="1" y1="7" x2="13" y2="7" stroke="#C4956A" stroke-width="1.4"/>
+      <line x1="2.5" y1="2.5" x2="11.5" y2="11.5" stroke="#C4956A" stroke-width=".8"/>
+      <line x1="11.5" y1="2.5" x2="2.5" y2="11.5" stroke="#C4956A" stroke-width=".8"/>
+    </svg>
+  </div>
+  <div class="pro-badge" id="proBadgeTxt">YOU'RE NOW PRO</div>
+  <div class="pro-title" id="proTitle">Welcome to <span>Pro.</span></div>
+  <div class="pro-sub" id="proSubTxt">Everything is unlocked.</div>
+  <div class="pro-line"></div>
+  <div class="pro-features" id="proFeats">
+    <div class="pro-feat">
+      <div class="pro-feat-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C4956A" stroke-width="1.8"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      </div>
+      <div class="pro-feat-text"><strong id="pf1">Unlimited messages</strong><br/><span id="pf1s">No daily limit</span></div>
+    </div>
+    <div class="pro-feat">
+      <div class="pro-feat-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C4956A" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+      </div>
+      <div class="pro-feat-text"><strong id="pf2">Deep personalization</strong><br/><span id="pf2s">Every response tailored to you</span></div>
+    </div>
+    <div class="pro-feat">
+      <div class="pro-feat-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C4956A" stroke-width="1.8"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
+      </div>
+      <div class="pro-feat-text"><strong id="pf3">Priority responses</strong><br/><span id="pf3s">Faster, richer conversations</span></div>
+    </div>
+    <div class="pro-feat">
+      <div class="pro-feat-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C4956A" stroke-width="1.8"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+      </div>
+      <div class="pro-feat-text"><strong id="pf4">Early access</strong><br/><span id="pf4s">First to get new features</span></div>
+    </div>
+  </div>
+  <button class="pro-btn" id="proBtn" onclick="closePro()">Start talking →</button>
+</div>
+
+
+<!-- PRO WELCOME SCREEN -->
+<div id="proWelcome">
+  <div class="pro-confetti" id="proConfetti"></div>
+  <div class="pro-star-wrap">
+    <div class="pro-star-ring"></div>
+    <div class="pro-star-ring"></div>
+    <svg class="pro-star-svg" width="32" height="32" viewBox="0 0 14 14" fill="none">
+      <line x1="7" y1="1" x2="7" y2="13" stroke="#5B8A94" stroke-width="1.4"/>
+      <line x1="1" y1="7" x2="13" y2="7" stroke="#5B8A94" stroke-width="1.4"/>
+      <line x1="2.5" y1="2.5" x2="11.5" y2="11.5" stroke="#5B8A94" stroke-width=".8"/>
+      <line x1="11.5" y1="2.5" x2="2.5" y2="11.5" stroke="#5B8A94" stroke-width=".8"/>
+    </svg>
+  </div>
+  <div class="pro-badge-pill" id="proBadgePill">PRO</div>
+  <div class="pro-title" id="proTitle">Welcome to <span>Pro.</span></div>
+  <div class="pro-sub" id="proSub">Everything is unlocked. Speak as freely as you need.</div>
+  <div class="pro-feats" id="proFeats">
+    <div class="pro-feat">
+      <div class="pro-feat-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B8A94" stroke-width="1.8"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
+      </div>
+      <div class="pro-feat-text"><strong id="pf1">Unlimited messages</strong></div>
+    </div>
+    <div class="pro-feat">
+      <div class="pro-feat-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B8A94" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      </div>
+      <div class="pro-feat-text"><strong id="pf2">All 4 companions</strong></div>
+    </div>
+    <div class="pro-feat">
+      <div class="pro-feat-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B8A94" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      </div>
+      <div class="pro-feat-text"><strong id="pf3">Deep personalization</strong></div>
+    </div>
+    <div class="pro-feat">
+      <div class="pro-feat-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B8A94" stroke-width="1.8"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      </div>
+      <div class="pro-feat-text"><strong id="pf4">Priority responses</strong></div>
+    </div>
+    <div class="pro-feat">
+      <div class="pro-feat-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B8A94" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <div class="pro-feat-text"><strong id="pf5">Early access to features</strong></div>
+    </div>
+  </div>
+  <button class="btn pro-start-btn" onclick="closeProWelcome()" id="proStartBtn">Start talking →</button>
+</div>
+
+
+<!-- SPLASH SCREEN -->
+<div id="splash">
+  <div class="sp-wrap">
+    <svg class="sp-star" width="22" height="22" viewBox="0 0 14 14" fill="none">
+      <line x1="7" y1="1" x2="7" y2="13" stroke="#5B8A94" stroke-width="1.3"/>
+      <line x1="1" y1="7" x2="13" y2="7" stroke="#5B8A94" stroke-width="1.3"/>
+      <line x1="2.5" y1="2.5" x2="11.5" y2="11.5" stroke="#5B8A94" stroke-width=".75"/>
+      <line x1="11.5" y1="2.5" x2="2.5" y2="11.5" stroke="#5B8A94" stroke-width=".75"/>
+    </svg>
+    <div class="sp-logo">
+      <span class="sp-logo-inner">Clar<span class="sp-o">o</span></span>
+    </div>
+    <div class="sp-tag" id="spTag">speak clearly</div>
+    <div class="sp-dot"></div>
+  </div>
+</div>
+
 
 <!-- PLAN MODAL -->
 <div class="mo" id="planModal" onclick="if(event.target===this)closeModal()">
@@ -624,7 +1035,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
   <div class="sb">
     <div class="pcard">
       <div class="pav"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5B8A94" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
-      <div style="flex:1;"><div class="pan" id="pname">Your Profile</div><div class="pap" id="pplan">Free plan</div></div>
+      <div style="flex:1;"><div class="pan" id="pname">Your Profile</div><div class="pap" id="pplan">Free plan</div><div style="font-size:10px;color:var(--t3);margin-top:3px;font-family:monospace;letter-spacing:.02em;" id="profileUid"></div></div>
       <div class="pabg bgf" id="pbadge">FREE</div>
     </div>
     <div class="ss"><div class="sst" id="snT">YOUR NAME</div>
@@ -677,6 +1088,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
           <div class="rinfo"><div class="rl" id="scsT">Contact support</div><div class="rsub">hello@claro.app</div></div>
           <div class="rarr">›</div>
         </div>
+        <div class="srow" id="cancelSubRow" onclick="cancelSubscription()" style="display:none;">
+          <div class="ri" style="background:#FEF2F2;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b04040" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+          <div class="rinfo"><div class="rl" id="sCancelSub" style="color:#b04040;">Cancel subscription</div><div class="rsub" id="sCancelSubSub">Contact us to cancel</div></div>
+          <div class="rarr" style="color:#b04040;">›</div>
+        </div>
         <div class="srow" onclick="openAbt()">
           <div class="ri b"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B8A94" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
           <div class="rinfo"><div class="rl" id="sabT">About Claro</div><div class="rsub" id="sabS">How it works</div></div>
@@ -717,6 +1133,134 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
 // ═══ CONFIG ═══
 // Replace with your deployed proxy URL after deploying claro-proxy
 const PROXY_URL = 'https://grand-respect-production-f3b0.up.railway.app';
+
+
+
+// ═══ PRO CELEBRATION ═══
+function showProCelebration(){
+  const el = document.getElementById('proCelebration');
+  if(!el) return;
+  const texts = {
+    en: {badge:"YOU'RE NOW PRO", title:"Welcome to", sub:"Everything is unlocked.",
+         f1:"Unlimited messages", f1s:"No daily limit",
+         f2:"Deep personalization", f2s:"Every response tailored to you",
+         f3:"Priority responses", f3s:"Faster, richer conversations",
+         f4:"Early access", f4s:"First to get new features", btn:"Start talking →"},
+    ru: {badge:"ВЫ ТЕПЕРЬ PRO", title:"Добро пожаловать в", sub:"Всё разблокировано.",
+         f1:"Безлимитные сообщения", f1s:"Без дневного лимита",
+         f2:"Глубокая персонализация", f2s:"Каждый ответ подстроен под тебя",
+         f3:"Приоритетные ответы", f3s:"Быстрее и глубже",
+         f4:"Ранний доступ", f4s:"Первым получаешь новые функции", btn:"Начать разговор →"},
+    es: {badge:"AHORA ERES PRO", title:"Bienvenido a", sub:"Todo desbloqueado.",
+         f1:"Mensajes ilimitados", f1s:"Sin límite diario",
+         f2:"Personalización profunda", f2s:"Cada respuesta adaptada a ti",
+         f3:"Respuestas prioritarias", f3s:"Conversaciones más rápidas",
+         f4:"Acceso anticipado", f4s:"Primero en nuevas funciones", btn:"Comenzar →"},
+    fr: {badge:"VOUS ÊTES PRO", title:"Bienvenue dans", sub:"Tout est débloqué.",
+         f1:"Messages illimités", f1s:"Sans limite quotidienne",
+         f2:"Personnalisation profonde", f2s:"Chaque réponse adaptée à toi",
+         f3:"Réponses prioritaires", f3s:"Conversations plus rapides",
+         f4:"Accès anticipé", f4s:"Premier à recevoir les nouveautés", btn:"Commencer →"}
+  };
+  const tx = texts[lang] || texts.en;
+  const s = (id, v) => { const e = document.getElementById(id); if(e) e.textContent = v; };
+  s('proBadgeTxt', tx.badge);
+  s('proSubTxt', tx.sub);
+  s('pf1', tx.f1); s('pf1s', tx.f1s);
+  s('pf2', tx.f2); s('pf2s', tx.f2s);
+  s('pf3', tx.f3); s('pf3s', tx.f3s);
+  s('pf4', tx.f4); s('pf4s', tx.f4s);
+  s('proBtn', tx.btn);
+  const titleEl = document.getElementById('proTitle');
+  if(titleEl) titleEl.innerHTML = tx.title + ' <span style="color:var(--gd)">Pro.</span>';
+  el.classList.add('show');
+}
+
+function closePro(){
+  const el = document.getElementById('proCelebration');
+  if(el){
+    el.style.opacity='0';
+    el.style.transition='opacity .4s ease';
+    setTimeout(()=>{ el.classList.remove('show'); el.style.opacity=''; el.style.transition=''; }, 400);
+  }
+}
+
+// ═══ SPLASH SCREEN ═══
+(function(){
+  const splash = document.getElementById('splash');
+  if(!splash) return;
+  // Update tagline based on language
+  const savedLang = localStorage.getItem('claro_lang');
+  const tags = {en:'speak clearly',ru:'говори ясно',es:'habla con claridad',fr:'parle clairement'};
+  const spTag = document.getElementById('spTag');
+  if(spTag && savedLang && tags[savedLang]) spTag.textContent = tags[savedLang];
+  // Hide splash after animations complete
+  setTimeout(()=>{
+    splash.classList.add('hide');
+    setTimeout(()=>splash.classList.add('gone'), 650);
+  }, 2000);
+})();
+
+
+// ═══ PRO WELCOME ═══
+function showProWelcome(){
+  const el = document.getElementById('proWelcome');
+  if(!el) return;
+  // Localize
+  const t = T[lang];
+  const titles = {en:'Welcome to Pro.',ru:'Добро пожаловать в Pro.',es:'Bienvenido a Pro.',fr:'Bienvenue dans Pro.'};
+  const subs = {en:'Everything is unlocked. Speak as freely as you need.',ru:'Всё открыто. Говори столько сколько нужно.',es:'Todo desbloqueado. Habla tan libremente como necesites.',fr:'Tout est débloqué. Parle aussi librement que tu le souhaites.'};
+  const feats = {
+    en:['Unlimited messages','All 4 companions','Deep personalization','Priority responses','Early access'],
+    ru:['Безлимитные сообщения','Все 4 собеседника','Глубокая персонализация','Приоритетные ответы','Ранний доступ'],
+    es:['Mensajes ilimitados','Los 4 compañeros','Personalización profunda','Respuestas prioritarias','Acceso anticipado'],
+    fr:['Messages illimités','Les 4 compagnons','Personnalisation profonde','Réponses prioritaires','Accès anticipé']
+  };
+  const titleEl = document.getElementById('proTitle');
+  const subEl = document.getElementById('proSub');
+  if(titleEl) titleEl.innerHTML = (titles[lang]||titles.en).replace('Pro.','<span>Pro.</span>');
+  if(subEl) subEl.textContent = subs[lang]||subs.en;
+  const pfIds = ['pf1','pf2','pf3','pf4','pf5'];
+  const langFeats = feats[lang]||feats.en;
+  pfIds.forEach((id,i)=>{ const el=document.getElementById(id); if(el) el.textContent=langFeats[i]; });
+  // Confetti
+  spawnConfetti();
+  // Show
+  el.classList.add('show');
+}
+
+function spawnConfetti(){
+  const container = document.getElementById('proConfetti');
+  if(!container) return;
+  container.innerHTML = '';
+  const colors = ['#5B8A94','#C4956A','#BDD9DE','#E8E5DF','#6BA8B4','#DDD9D1'];
+  for(let i=0;i<28;i++){
+    const p = document.createElement('div');
+    p.className = 'pro-particle';
+    p.style.cssText = [
+      'left:' + (20 + Math.random()*60) + '%',
+      'top:' + (40 + Math.random()*40) + '%',
+      'background:' + colors[Math.floor(Math.random()*colors.length)],
+      'width:' + (3+Math.random()*5) + 'px',
+      'height:' + (3+Math.random()*5) + 'px',
+      'border-radius:' + (Math.random()>0.5?'50%':'2px'),
+      'animation-delay:' + (Math.random()*0.6) + 's',
+      'animation-duration:' + (1.4+Math.random()*0.8) + 's',
+    ].join(';');
+    container.appendChild(p);
+  }
+}
+
+function closeProWelcome(){
+  const el = document.getElementById('proWelcome');
+  if(!el) return;
+  el.classList.add('hide');
+  setTimeout(()=>{ el.classList.remove('show','hide'); }, 500);
+  // Set plan to pro locally
+  plan = 'pro';
+  localStorage.setItem('claro_plan','pro');
+  updatePlanUI();
+}
 
 // ═══ DATA ═══
 const QUIZ={
@@ -989,6 +1533,16 @@ custom:null}
 };
 
 // ═══ STATE ═══
+// Generate unique user ID on first launch
+function getOrCreateUserId(){
+  let uid = localStorage.getItem('claro_uid');
+  if(!uid){
+    uid = 'claro_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
+    localStorage.setItem('claro_uid', uid);
+  }
+  return uid;
+}
+const USER_ID = getOrCreateUserId();
 let lang='en', mode='claro', customTxt='', mood='', hist=[], loading=false, panelOpen=false, curScr='s1';
 let plan=localStorage.getItem('claro_plan')||'free';
 // Reset message counter daily
@@ -1155,14 +1709,27 @@ function loadName(){
 }
 
 function pickP(el){
+  if(el.dataset.plan==='pro'){
+    window.location.href='https://buy.stripe.com/test_4gMbJ33x2ghZccy2Rxb7y00';
+    return;
+  }
   document.querySelectorAll('.pc').forEach(c=>c.classList.remove('on'));
   el.classList.add('on');plan=el.dataset.plan;
   localStorage.setItem('claro_plan',plan);
   const b=document.getElementById('spbtn');b.classList.remove('dim');b.classList.add('on');
   updatePlanUI();
 }
-function selPlan(p){plan=p;localStorage.setItem('claro_plan',p);updatePlanUI();closeModal();}
-function openModal(){document.getElementById('planModal').classList.add('open');}
+function selPlan(p){
+  if(p==='pro'){
+    // Open Stripe in the SAME tab so the success redirect comes back here automatically
+    window.location.href='https://buy.stripe.com/test_4gMbJ33x2ghZccy2Rxb7y00';
+    return;
+  }
+  plan=p;localStorage.setItem('claro_plan',p);updatePlanUI();closeModal();
+}
+function openModal(){
+  window.location.href='https://buy.stripe.com/test_4gMbJ33x2ghZccy2Rxb7y00';
+}
 function closeModal(){document.getElementById('planModal').classList.remove('open');}
 
 function pickMood(el){
@@ -1229,6 +1796,13 @@ function applyP(){
 // ═══ SETTINGS ═══
 function openSett(){
   loadName();updatePlanUI();
+  // Show user ID in profile
+  const uidEl = document.getElementById('profileUid');
+  if(uidEl) uidEl.textContent = 'ID: ' + USER_ID;
+  // Show cancel row only for Pro users
+  const cancelRow = document.getElementById('cancelSubRow');
+  if(cancelRow) cancelRow.style.display = plan === 'pro' ? 'flex' : 'none';
+  updateCancelSubLocale();
   document.getElementById('chat').style.display='none';
   const s=document.getElementById('sett');
   s.style.display='flex';s.style.flexDirection='column';s.style.flex='1';
@@ -1264,25 +1838,85 @@ function changeLang(){
   setTimeout(psAll,60);
 }
 function resetApp(){
-  // Replace the row with an inline confirmation
   const row = document.getElementById('resetRow');
   if(!row) return;
-  const orig = row.innerHTML;
-  row.innerHTML = `
-    <div style="flex:1;display:flex;align-items:center;justify-content:space-between;gap:.75rem;">
-      <div style="font-size:13px;color:var(--t2);font-weight:300;" id="resetConfirmTxt">Sure? This clears everything.</div>
-      <div style="display:flex;gap:.5rem;">
-        <button onclick="event.stopPropagation();doReset()" style="padding:5px 14px;border-radius:20px;border:none;background:#b04040;color:#fff;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;">Yes</button>
-        <button onclick="event.stopPropagation();cancelReset(this,\`${orig.replace(/`/g,'\\`')}\`)" style="padding:5px 14px;border-radius:20px;border:1.5px solid var(--bd);background:transparent;color:var(--t2);font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;">Cancel</button>
-      </div>
-    </div>
-  `;
+  // Clear content and build confirmation UI safely
+  row.innerHTML = '';
   row.onclick = null;
+  // Text
+  const txt = document.createElement('div');
+  txt.style.cssText = 'flex:1;font-size:13px;color:var(--t2);font-weight:300;';
+  txt.textContent = 'Sure? This clears everything.';
+  // Yes button
+  const yesBtn = document.createElement('button');
+  yesBtn.textContent = 'Yes';
+  yesBtn.style.cssText = "padding:5px 16px;border-radius:20px;border:none;background:#b04040;color:#fff;font-size:12px;font-family:DM Sans,sans-serif;cursor:pointer;";
+  yesBtn.onclick = (e) => { e.stopPropagation(); doReset(); };
+  // Cancel button
+  const cancelBtn = document.createElement('button');
+  cancelBtn.style.cssText = "padding:5px 16px;border-radius:20px;border:1.5px solid var(--bd);background:transparent;color:var(--t2);font-size:12px;font-family:DM Sans,sans-serif;cursor:pointer;";
+  cancelBtn.textContent = '↩';
+  cancelBtn.onclick = (e) => { e.stopPropagation(); cancelReset(); };
+  // Buttons wrap
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;gap:.5rem;flex-shrink:0;';
+  wrap.appendChild(yesBtn);
+  wrap.appendChild(cancelBtn);
+  row.appendChild(txt);
+  row.appendChild(wrap);
 }
+function cancelReset(){
+  const row = document.getElementById('resetRow');
+  if(!row) return;
+  row.innerHTML = '';
+  // Rebuild original reset row content
+  const ri = document.createElement('div');
+  ri.className = 'ri n';
+  ri.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6A6760" stroke-width="1.8"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>';
+  const info = document.createElement('div');
+  info.className = 'rinfo';
+  const label = document.createElement('div');
+  label.className = 'rl';
+  label.id = 'srsT';
+  label.style.color = '#b04040';
+  label.textContent = T[lang]?.srsT || 'Reset & restart';
+  const sub = document.createElement('div');
+  sub.className = 'rsub';
+  sub.id = 'srsS';
+  sub.textContent = T[lang]?.srsS || 'Clear all data';
+  info.appendChild(label);
+  info.appendChild(sub);
+  row.appendChild(ri);
+  row.appendChild(info);
+  row.onclick = resetApp;
+}
+
 function doReset(){ localStorage.clear(); location.reload(); }
-function cancelReset(btn, orig){
-  const row = btn.closest('.srow');
-  if(row){ row.innerHTML = orig; row.onclick = resetApp; }
+// cancelReset handled in resetApp
+
+
+// ═══ SUBSCRIPTION MANAGEMENT ═══
+function cancelSubscription(){
+  const uid = USER_ID;
+  const subject = encodeURIComponent('Cancel Claro Pro Subscription');
+  const body = encodeURIComponent(
+    'Hi Claro team,\n\nI would like to cancel my Pro subscription.\n\nMy User ID: ' + uid + '\n\nThank you.'
+  );
+  window.open('mailto:hello@claro.app?subject=' + subject + '&body=' + body);
+}
+
+function updateCancelSubLocale(){
+  const labels = {
+    en: {cancel:'Cancel subscription', sub:'Contact us to cancel'},
+    ru: {cancel:'Отменить подписку', sub:'Напишите нам для отмены'},
+    es: {cancel:'Cancelar suscripción', sub:'Contáctanos para cancelar'},
+    fr: {cancel:'Annuler l\'abonnement', sub:'Contactez-nous pour annuler'}
+  };
+  const l = labels[lang] || labels.en;
+  const c = document.getElementById('sCancelSub');
+  const s = document.getElementById('sCancelSubSub');
+  if(c) c.textContent = l.cancel;
+  if(s) s.textContent = l.sub;
 }
 
 // ═══ CHECK-IN ═══
@@ -1627,6 +2261,13 @@ function wbOther() {
   if(s6){ curScr = 'sm'; s6.classList.add('act'); }
 }
 
+
+function activateProManually(){
+  plan='pro';
+  localStorage.setItem('claro_plan','pro');
+  updatePlanUI();
+  showProWelcome();
+}
 // ═══ INIT ═══
 (function init(){
   loadName();applyTheme(theme);
@@ -1636,23 +2277,32 @@ function wbOther() {
     document.querySelectorAll('.lc').forEach(c=>{if(c.dataset.lang===lang)c.classList.add('on');});
     applyLang();
   } else applyLang();
-  // Returning user: has API key, lang, and completed quiz
+  // Check if returning from Stripe payment (any param signals success)
+  const params=new URLSearchParams(window.location.search);
+  const isUpgraded = params.get('upgraded')==='true' || params.get('pro')==='1' || window.location.hash.includes('pro=1');
+  // Returning user: has language and completed quiz
   const hasQuiz=localStorage.getItem('claro_quiz');
   if(sl&&hasQuiz){
     showWelcomeBack();
   } else if(sl){
     goTo('s2');
   }
+  if(isUpgraded){
+    plan='pro';localStorage.setItem('claro_plan','pro');
+    history.replaceState(null,'',window.location.pathname);
+    setTimeout(()=>{
+      // Make sure we're past onboarding into the actual chat/app view
+      if(typeof startChat==='function' && !document.getElementById('chatScreen').style.display.includes('flex')){
+        // If user hasn't started chat yet, jump straight there with last-used or default companion
+        const lastMode = localStorage.getItem('claro_mode') || 'claro';
+        mode = lastMode;
+      }
+      showProWelcome();
+    }, 900);
+  }
 })();
 
-// ═══ PWA SERVICE WORKER ═══
-if('serviceWorker' in navigator){
-  window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('./sw.js')
-      .then(()=>console.log('Claro SW registered'))
-      .catch(e=>console.log('SW error:',e));
-  });
-}
+// Service Worker disabled — not required for PWA functionality
 </script>
 </body>
 </html>
