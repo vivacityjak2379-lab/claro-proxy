@@ -470,7 +470,7 @@ function posHeroStar(){
   if(!o||!st||!w)return;
   const oR=o.getBoundingClientRect(),wR=w.getBoundingClientRect();
   st.style.left=(oR.left-wR.left+oR.width/2-parseInt(st.getAttribute('width'))/2)+'px';
-  st.style.top=(oR.top-wR.top-parseInt(st.getAttribute('height'))+2)+'px';
+  st.style.top=(oR.top-wR.top-parseInt(st.getAttribute('height'))*0.55)+'px';
 }
 document.fonts.ready.then(()=>setTimeout(posHeroStar,80));
 window.addEventListener('resize',posHeroStar);
