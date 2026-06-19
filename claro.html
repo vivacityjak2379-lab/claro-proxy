@@ -4,6 +4,9 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,viewport-fit=cover"/>
 <title>Claro — speak clearly</title>
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png"/>
+<link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png"/>
+<link rel="apple-touch-icon" href="/apple-touch-icon.png"/>
 <meta name="description" content="A quiet space to think clearly, feel understood, and move forward. Four AI companions for mental clarity."/>
 <meta name="theme-color" content="#F6F4F0" id="themeColorMeta"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
@@ -946,7 +949,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
       <div class="cn" id="cN1">Friend</div><div class="cd" id="cD1">support & real talk</div>
     </div>
     <div class="cc" data-mode="therapist" onclick="pickC(this)">
-      <svg width="30" height="30" viewBox="0 0 52 52" fill="none"><path d="M10 38 Q26 30 42 38" stroke="#5B8A94" stroke-width="1.2" fill="none" stroke-linecap="round"/><ellipse cx="26" cy="22" rx="10" ry="7" stroke="#5B8A94" stroke-width="1.2" fill="none"/></svg>
+      <svg width="30" height="30" viewBox="0 0 52 52" fill="none"><circle cx="26" cy="26" r="16" stroke="#5B8A94" stroke-width="1" fill="none" opacity="0.45"/><circle cx="26" cy="26" r="10.5" stroke="#5B8A94" stroke-width="1.2" fill="none" opacity="0.75"/><circle cx="26" cy="26" r="5" stroke="#5B8A94" stroke-width="1.4" fill="none"/></svg>
       <div class="cn" id="cN2">Therapist</div><div class="cd" id="cD2">CBT & deep work</div>
     </div>
     <div class="cc" data-mode="mentor" onclick="pickC(this)">
@@ -1005,7 +1008,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
         <div class="pk-n" id="pN1">Friend</div><div class="pk-d" id="pD1">support</div>
       </div>
       <div class="pk" data-mode="therapist" onclick="selP(this)">
-        <svg width="16" height="16" viewBox="0 0 52 52" fill="none"><path d="M10 38 Q26 30 42 38" stroke="#5B8A94" stroke-width="1.5" fill="none" stroke-linecap="round"/><ellipse cx="26" cy="22" rx="10" ry="7" stroke="#5B8A94" stroke-width="1.5" fill="none"/></svg>
+        <svg width="16" height="16" viewBox="0 0 52 52" fill="none"><circle cx="26" cy="26" r="16" stroke="#5B8A94" stroke-width="1.2" fill="none" opacity="0.45"/><circle cx="26" cy="26" r="10.5" stroke="#5B8A94" stroke-width="1.4" fill="none" opacity="0.75"/><circle cx="26" cy="26" r="5" stroke="#5B8A94" stroke-width="1.6" fill="none"/></svg>
         <div class="pk-n" id="pN2">Therapist</div><div class="pk-d" id="pD2">CBT</div>
       </div>
       <div class="pk" data-mode="mentor" onclick="selP(this)">
@@ -2245,7 +2248,7 @@ function restoreHistToDOM(msgs) {
 const COMP_ICONS = {
   claro: '<svg width="18" height="18" viewBox="0 0 52 52" fill="none"><path d="M30 10 Q38 18 34 28 Q28 36 18 32 Q24 40 34 38 Q44 34 44 24 Q44 14 34 10Z" stroke="#5B8A94" stroke-width="1.4" fill="none"/></svg>',
   friend: '<svg width="18" height="18" viewBox="0 0 52 52" fill="none"><circle cx="26" cy="20" r="8" stroke="#5B8A94" stroke-width="1.4" fill="none"/><path d="M12 42c0-7.7 6.3-14 14-14s14 6.3 14 14" stroke="#5B8A94" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg>',
-  therapist: '<svg width="18" height="18" viewBox="0 0 52 52" fill="none"><path d="M10 38 Q26 30 42 38" stroke="#5B8A94" stroke-width="1.4" fill="none" stroke-linecap="round"/><ellipse cx="26" cy="22" rx="10" ry="7" stroke="#5B8A94" stroke-width="1.4" fill="none"/></svg>',
+  therapist: '<svg width="18" height="18" viewBox="0 0 52 52" fill="none"><circle cx="26" cy="26" r="16" stroke="#5B8A94" stroke-width="1.3" fill="none" opacity="0.45"/><circle cx="26" cy="26" r="10.5" stroke="#5B8A94" stroke-width="1.4" fill="none" opacity="0.75"/><circle cx="26" cy="26" r="5" stroke="#5B8A94" stroke-width="1.6" fill="none"/></svg>',
   mentor: '<svg width="18" height="18" viewBox="0 0 52 52" fill="none"><circle cx="26" cy="26" r="13" stroke="#DDD9D1" stroke-width="1"/><line x1="26" y1="13" x2="26" y2="39" stroke="#5B8A94" stroke-width="1.2"/><line x1="13" y1="26" x2="39" y2="26" stroke="#5B8A94" stroke-width="1.2"/><polygon points="26,15 28,23 26,21 24,23" fill="#5B8A94"/></svg>',
   custom: '<svg width="18" height="18" viewBox="0 0 36 36" fill="none"><path d="M8 28 L10 18 L26 6 Q30 2 32 6 Q34 10 30 12 L14 26 Z" stroke="#5B8A94" stroke-width="1.4" fill="none"/><line x1="22" y1="8" x2="30" y2="14" stroke="#5B8A94" stroke-width="1.4"/></svg>'
 };
