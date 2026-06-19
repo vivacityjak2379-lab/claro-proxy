@@ -1190,7 +1190,17 @@ function closePro(){
   if(el){
     el.style.opacity='0';
     el.style.transition='opacity .4s ease';
-    setTimeout(()=>{ el.classList.remove('show'); el.style.opacity=''; el.style.transition=''; }, 400);
+    setTimeout(()=>{
+      el.classList.remove('show');
+      el.style.opacity='';
+      el.style.transition='';
+      // After Pro celebration → go straight to chat
+      const lastMode = localStorage.getItem('claro_last_mode') || 'claro';
+      const wb = document.getElementById('wb');
+      if(wb) wb.style.display = 'none';
+      document.getElementById('ob').style.display = 'none';
+      wbStartWith(lastMode);
+    }, 400);
   }
 }
 
@@ -1841,11 +1851,87 @@ function retakeQuiz(){
   curScr='s4';initQuiz();document.getElementById('s4').classList.add('act');
 }
 function changeLang(){
-  ['sett','chat','abt'].forEach(id=>{document.getElementById(id).style.display='none';});
-  document.getElementById('ob').style.display='block';
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('act','out'));
-  curScr='s1';document.getElementById('s1').classList.add('act');
-  setTimeout(psAll,60);
+  // Show language picker as a modal overlay, not full reset
+  const hasQuiz = localStorage.getItem('claro_quiz');
+  if(hasQuiz){
+    // Already onboarded — show inline language picker
+    showLangPicker();
+  } else {
+    // Not onboarded yet — go to language screen normally
+    ['sett','chat','abt'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el)el.style.display='none';
+    });
+    document.getElementById('ob').style.display='block';
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('act','out'));
+    curScr='s1';document.getElementById('s1').classList.add('act');
+    setTimeout(psAll,60);
+  }
+}
+
+function showLangPicker(){
+  // Create inline language picker overlay
+  let overlay = document.getElementById('langOverlay');
+  if(!overlay){
+    overlay = document.createElement('div');
+    overlay.id = 'langOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(26,31,36,.55);z-index:500;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(6px);';
+    const sheet = document.createElement('div');
+    sheet.style.cssText = 'background:var(--sf);border-radius:22px 22px 0 0;padding:1.75rem 1.5rem 2.5rem;width:100%;max-width:480px;';
+    const langs = [
+      {code:'en',abbr:'En',name:'English',nat:'English'},
+      {code:'ru',abbr:'Ru',name:'Russian',nat:'Русский'},
+      {code:'es',abbr:'Es',name:'Spanish',nat:'Español'},
+      {code:'fr',abbr:'Fr',name:'French',nat:'Français'}
+    ];
+    const title = {en:'Choose language',ru:'Выбери язык',es:'Elige idioma',fr:'Choisir la langue'};
+    sheet.innerHTML = `
+      <div style="text-align:center;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:1.25rem;">${title[lang]||title.en}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:1.25rem;">
+        ${langs.map(l=>`
+          <div onclick="switchLang('${l.code}')" style="border:1.5px solid ${l.code===lang?'var(--ac)':'var(--bd)'};border-radius:14px;padding:.9rem .75rem;cursor:pointer;background:${l.code===lang?'var(--al)':'var(--sf)'};text-align:center;">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-style:italic;color:var(--ac);">${l.abbr}</div>
+            <div style="font-size:13px;font-weight:500;color:var(--tx);margin-top:3px;">${l.name}</div>
+            <div style="font-size:10px;color:var(--t3);">${l.nat}</div>
+          </div>
+        `).join('')}
+      </div>
+      <button onclick="document.getElementById('langOverlay').remove()" style="width:100%;padding:.85rem;border-radius:50px;border:1.5px solid var(--bd);background:transparent;color:var(--t2);font-size:14px;font-family:'DM Sans',sans-serif;cursor:pointer;">Cancel</button>
+    `;
+    overlay.appendChild(sheet);
+    overlay.onclick = (e)=>{ if(e.target===overlay) overlay.remove(); };
+    document.getElementById('app').appendChild(overlay);
+  } else {
+    overlay.style.display = 'flex';
+  }
+}
+
+function switchLang(newLang){
+  lang = newLang;
+  localStorage.setItem('claro_lang', newLang);
+  applyLang();
+  // Update settings language label
+  const el = document.getElementById('sLangSub');
+  if(el) el.textContent = T[lang].sLangSub;
+  // Close overlay
+  const overlay = document.getElementById('langOverlay');
+  if(overlay) overlay.remove();
+  // Show confirmation toast
+  const msgs = {en:'Language updated',ru:'Язык изменён',es:'Idioma actualizado',fr:'Langue mise à jour'};
+  showToast(msgs[lang]||msgs.en);
+}
+
+function showToast(msg){
+  let t = document.getElementById('appToast');
+  if(!t){
+    t = document.createElement('div');
+    t.id = 'appToast';
+    t.style.cssText = 'position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--tx);color:var(--sf);padding:.65rem 1.25rem;border-radius:50px;font-size:13px;font-family:"DM Sans",sans-serif;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;';
+    document.getElementById('app').appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  setTimeout(()=>{ t.style.opacity='0'; }, 2000);
 }
 function resetApp(){
   const row = document.getElementById('resetRow');
