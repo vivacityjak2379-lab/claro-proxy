@@ -307,6 +307,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
 .afd{font-size:12px;color:var(--t2);font-weight:300;line-height:1.5;}
 
 /* ─ WELCOME BACK ─ */
+/* ─ WELCOME BACK MOOD ─ */
+.wb-mood-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);text-align:center;margin-bottom:.65rem;animation:wbFade .5s ease .25s both;}
+.wb-moods{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-bottom:1.5rem;animation:wbFade .5s ease .35s both;}
+.wb-mood{padding:6px 14px;border-radius:50px;border:1.5px solid var(--bd);background:var(--sf);font-size:13px;color:var(--t2);cursor:pointer;transition:all .18s;font-family:'DM Sans',sans-serif;}
+.wb-mood:hover{border-color:var(--ac);color:var(--tx);}
+.wb-mood.sel{border-color:var(--ac);background:var(--al);color:var(--ac);font-weight:500;}
+
 @keyframes wbFade{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
 #wb{display:none;flex-direction:column;flex:1;min-height:100dvh;align-items:center;justify-content:center;padding:2.5rem 1.75rem;}
 @keyframes wbIn{
@@ -962,6 +969,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
 <div id="wb">
   <div class="wb-time" id="wbTime">Good morning</div>
   <div class="wb-greeting" id="wbGreeting">Welcome back<span id="wbName"></span></div>
+  <div class="wb-mood-label" id="wbMoodLabel">How are you feeling?</div>
+  <div class="wb-moods" id="wbMoods"></div>
   <div class="wb-sub" id="wbSub">Who do you want to talk to today?</div>
   <div class="wb-companions" id="wbComps"></div>
   <div class="wb-divider">
@@ -2209,13 +2218,39 @@ function showWelcomeBack() {
     container.appendChild(card);
   });
 
+  // Build mood pills
+  const wbMoodLabel = document.getElementById('wbMoodLabel');
+  const wbMoodsEl = document.getElementById('wbMoods');
+  if(wbMoodLabel && wbMoodsEl){
+    const moodLabels = {
+      en: {label: 'How are you feeling?', moods: ['calm','anxious','tired','inspired','sad','energized','confused','just here']},
+      ru: {label: 'Как ты сейчас?', moods: ['спокойно','тревожно','устал','вдохновлён','грустно','энергично','запутался','просто так']},
+      es: {label: '¿Cómo te sientes?', moods: ['tranquilo','ansioso','cansado','inspirado','triste','con energía','confundido','sin razón']},
+      fr: {label: 'Comment tu te sens?', moods: ['calme','anxieux','fatigué','inspiré','triste','énergisé','confus','juste là']}
+    };
+    const ml = moodLabels[lang] || moodLabels.en;
+    wbMoodLabel.textContent = ml.label;
+    wbMoodsEl.innerHTML = '';
+    ml.moods.forEach(m => {
+      const btn = document.createElement('button');
+      btn.className = 'wb-mood';
+      btn.textContent = m;
+      btn.onclick = () => {
+        document.querySelectorAll('.wb-mood').forEach(b => b.classList.remove('sel'));
+        btn.classList.add('sel');
+        mood = m;
+      };
+      wbMoodsEl.appendChild(btn);
+    });
+  }
+
   // Show the screen
   document.getElementById('ob').style.display = 'none';
   const wb = document.getElementById('wb');
   // Reset animations so they replay
-  wb.querySelectorAll('.wb-time,.wb-greeting,.wb-sub,.wb-companions,.wb-divider,.wb-other-btn').forEach(el => {
+  wb.querySelectorAll('.wb-time,.wb-greeting,.wb-mood-label,.wb-moods,.wb-sub,.wb-companions,.wb-divider,.wb-other-btn').forEach(el => {
     el.style.animation = 'none';
-    el.offsetHeight; // reflow
+    el.offsetHeight;
     el.style.animation = '';
   });
   wb.style.display = 'flex';
@@ -2274,31 +2309,38 @@ function activateProManually(){
   const sl=localStorage.getItem('claro_lang');
   if(sl){
     lang=sl;
-    document.querySelectorAll('.lc').forEach(c=>{if(c.dataset.lang===lang)c.classList.add('on');});
+    document.querySelectorAll('.lc').forEach(x=>{if(x.dataset.lang===lang)x.classList.add('on');});
     applyLang();
   } else applyLang();
-  // Check if returning from Stripe payment (any param signals success)
+
+  // Check if returning from Stripe payment
   const params=new URLSearchParams(window.location.search);
-  const isUpgraded = params.get('upgraded')==='true' || params.get('pro')==='1' || window.location.hash.includes('pro=1');
-  // Returning user: has language and completed quiz
+  const isUpgraded = params.get('upgraded')==='true' || params.get('pro')==='1';
+  if(isUpgraded){
+    // Activate Pro immediately
+    plan='pro';
+    localStorage.setItem('claro_plan','pro');
+    history.replaceState(null,'',window.location.pathname);
+  }
+
   const hasQuiz=localStorage.getItem('claro_quiz');
-  if(sl&&hasQuiz){
+  if(sl && hasQuiz){
+    // Returning user — go to welcome back screen
     showWelcomeBack();
+    // Then show Pro celebration on top
+    if(isUpgraded){
+      setTimeout(()=>{ showProCelebration(); }, 600);
+    }
   } else if(sl){
     goTo('s2');
-  }
-  if(isUpgraded){
-    plan='pro';localStorage.setItem('claro_plan','pro');
-    history.replaceState(null,'',window.location.pathname);
-    setTimeout(()=>{
-      // Make sure we're past onboarding into the actual chat/app view
-      if(typeof startChat==='function' && !document.getElementById('chatScreen').style.display.includes('flex')){
-        // If user hasn't started chat yet, jump straight there with last-used or default companion
-        const lastMode = localStorage.getItem('claro_mode') || 'claro';
-        mode = lastMode;
-      }
-      showProWelcome();
-    }, 900);
+    if(isUpgraded){
+      setTimeout(()=>{ showProCelebration(); }, 600);
+    }
+  } else {
+    // New user — start from language selection
+    if(isUpgraded){
+      setTimeout(()=>{ showProCelebration(); }, 600);
+    }
   }
 })();
 
