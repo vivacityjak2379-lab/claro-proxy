@@ -1552,6 +1552,7 @@ function getOrCreateUserId(){
   return uid;
 }
 const USER_ID = getOrCreateUserId();
+
 let lang='en', mode='claro', customTxt='', mood='', hist=[], loading=false, panelOpen=false, curScr='s1';
 let plan=localStorage.getItem('claro_plan')||'free';
 // Reset message counter daily
@@ -2303,8 +2304,34 @@ function activateProManually(){
   updatePlanUI();
   showProWelcome();
 }
+
+// ═══ SERVER SYNC ═══
+async function registerUser(email=''){
+  try{
+    await fetch(PROXY_URL+'/register',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({uid:USER_ID, email})
+    });
+    localStorage.setItem('claro_registered','1');
+  }catch(e){ console.log('Register error:',e); }
+}
+
+async function syncProToServer(){
+  try{
+    const r = await fetch(PROXY_URL+'/register',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({uid:USER_ID, plan:'pro'})
+    });
+    if(r.ok) console.log('Pro synced for uid:', USER_ID);
+  }catch(e){ console.log('Sync error:',e); }
+}
+
 // ═══ INIT ═══
 (function init(){
+  // Auto-register on first load
+  if(!localStorage.getItem('claro_registered')) registerUser();
   loadName();applyTheme(theme);
   const sl=localStorage.getItem('claro_lang');
   if(sl){
@@ -2321,6 +2348,8 @@ function activateProManually(){
     plan='pro';
     localStorage.setItem('claro_plan','pro');
     history.replaceState(null,'',window.location.pathname);
+    // Sync Pro to server so admin can see it
+    syncProToServer();
   }
 
   const hasQuiz=localStorage.getItem('claro_quiz');

@@ -125,17 +125,22 @@ app.get('/check-plan/:uid', (req, res) => {
 
 // ─── REGISTER USER ───
 app.post('/register', (req, res) => {
-  const { uid, email } = req.body;
+  const { uid, email, plan } = req.body;
   if (!uid) return res.status(400).json({ error: 'uid required' });
   if (!users[uid]) {
     users[uid] = {
-      plan: 'free',
+      plan: plan || 'free',
       email: email || '',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-  } else if (email && !users[uid].email) {
-    users[uid].email = email;
+  } else {
+    if (email && !users[uid].email) users[uid].email = email;
+    if (plan === 'pro') {
+      users[uid].plan = 'pro';
+      users[uid].updatedAt = new Date().toISOString();
+      console.log('Pro synced via register for uid:', uid);
+    }
   }
   res.json({ ok: true });
 });
