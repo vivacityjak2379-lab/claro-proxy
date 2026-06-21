@@ -231,7 +231,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
 @keyframes pu{0%,60%,100%{transform:translateY(0);opacity:.3;}30%{transform:translateY(-4px);opacity:1;}}
 
 /* ─ INPUT ─ */
-.ia{padding:.78rem 1rem 1.25rem;border-top:1px solid var(--bd);background:var(--sf);flex-shrink:0;}
+.ia{padding:.78rem 1rem calc(1.25rem + env(safe-area-inset-bottom));border-top:1px solid var(--bd);background:var(--sf);flex-shrink:0;}
 .ir{display:flex;gap:7px;align-items:flex-end;}
 #userInput{flex:1;resize:none;border:1.5px solid var(--bd);border-radius:18px;padding:.65rem .9rem;font-size:16px;font-family:'DM Sans',sans-serif;font-weight:300;color:var(--tx);background:var(--s2);outline:none;line-height:1.5;min-height:42px;max-height:120px;transition:border-color .2s,box-shadow .2s;}
 #userInput::placeholder{color:var(--t3);}
