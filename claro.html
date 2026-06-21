@@ -40,7 +40,7 @@
   --gd:#D4A574;--gl:#221608;
 }
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-height:100dvh;display:flex;align-items:center;justify-content:center;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
-.app{width:100%;max-width:430px;height:100dvh;display:flex;flex-direction:column;background:var(--sf);position:relative;overflow:hidden;box-shadow:0 0 0 1px var(--bd);}
+.app{width:100%;max-width:430px;height:100dvh;display:flex;flex-direction:column;background:var(--sf);position:relative;overflow:hidden;box-shadow:0 0 0 1px var(--bd);padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);}
 
 /* ─ DARK overrides ─ */
 .dark .btn{background:var(--tx);color:var(--bg);}
