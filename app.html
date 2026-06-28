@@ -638,13 +638,19 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
 
 /* ═══ WEB DESKTOP LAYOUT ═══ */
 @media (min-width: 768px) {
-  html, body { height: 100%; overflow: hidden; }
+  html { height: 100%; overflow: hidden; }
+  body {
+    height: 100% !important;
+    overflow: hidden !important;
+    display: block !important;
+    align-items: unset !important;
+    justify-content: unset !important;
+    min-height: unset !important;
+  }
 
-  /* Splash stays centered */
-  #splash { z-index: 9999; }
-
-  /* Onboarding stays centered but in web wrapper */
-  body { display: block; }
+  /* Splash stays on top */
+  #splash { z-index: 9999 !important; }
+  #proCelebration { z-index: 9998 !important; }
 
   /* Web shell */
   .web-shell {
@@ -844,6 +850,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
     flex-direction: column;
     min-width: 0;
     overflow: hidden;
+    height: 100%;
+  }
+  #webAppSlot {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
 
   /* Web header */
@@ -883,21 +897,38 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
     height: 100% !important;
     box-shadow: none !important;
     border-radius: 0 !important;
-    flex: 1;
-    overflow: hidden;
+    flex: 1 !important;
+    overflow: hidden !important;
+    position: relative !important;
   }
 
   /* Override hdr for web */
   .hdr { display: none !important; }
 
+  /* Web head visible */
+  .web-head { display: flex !important; }
+
   /* Chat area fills remaining space */
   #chat {
-    height: 100%;
+    flex: 1 !important;
+    height: 100% !important;
     display: flex !important;
-    flex-direction: column;
+    flex-direction: column !important;
+    overflow: hidden !important;
   }
 
-  .msgs { flex: 1; overflow-y: auto; }
+  .msgs {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    min-height: 0 !important;
+  }
+
+  /* Settings on desktop */
+  #sett {
+    flex: 1 !important;
+    height: 100% !important;
+    overflow-y: auto !important;
+  }
 
   /* Focus mode */
   .msgs.focus-mode { max-width: 620px; margin: 0 auto; width: 100%; }
