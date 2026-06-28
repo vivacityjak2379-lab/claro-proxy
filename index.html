@@ -193,7 +193,7 @@ footer{background:var(--s2);border-top:1px solid var(--bd);padding:3rem 2rem;tex
 
 <!-- HERO -->
 <section class="hero">
-  <div class="coming-badge">Coming Soon</div>
+  <div class="coming-badge">Web App — Early Access</div>
   <div class="hero-lbl">AI companion for mental clarity</div>
   <div class="hero-logo" id="heroLogo">
     <div class="hero-logo-txt">Clar<span class="lo" id="heroO">o</span></div>
@@ -207,8 +207,13 @@ footer{background:var(--s2);border-top:1px solid var(--bd);padding:3rem 2rem;tex
   <h1 class="hero-h2">A space to think clearly,<br>feel understood, move forward.</h1>
   <p class="hero-sub">Four AI companions — mindfulness coach, supportive friend, therapist, life mentor — each one different, all designed for real conversation.</p>
   <div class="hero-btns">
-    <a href="#waitlist" class="btn-p" onclick="document.getElementById('waitlist').scrollIntoView({behavior:'smooth'});return false;">Join the Waitlist →</a>
-    <a href="#companions" class="btn-g">See companions</a>
+    <a href="/app.html" class="btn-p">Try web app →</a>
+    <a href="#waitlist" class="btn-g" onclick="document.getElementById('waitlist').scrollIntoView({behavior:'smooth'});return false;">Join waitlist</a>
+  </div>
+  <div style="margin-top:1rem;font-size:12px;color:var(--t3);display:flex;align-items:center;justify-content:center;gap:1rem;flex-wrap:wrap;">
+    <span>✦ Web app — available now</span>
+    <span>· iOS app — coming soon</span>
+    <span>· Android — coming soon</span>
   </div>
 </section>
 
@@ -452,6 +457,34 @@ footer{background:var(--s2);border-top:1px solid var(--bd);padding:3rem 2rem;tex
   </div>
 </section>
 
+
+<!-- PLATFORM SECTION -->
+<section class="sec" style="text-align:center;padding:4rem 1.5rem;">
+  <div class="sec-label reveal">Platforms</div>
+  <h2 class="sec-h reveal">Available now.<br>Everywhere soon.</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;max-width:680px;margin:2.5rem auto 0;">
+    <a href="/app.html" style="text-decoration:none;">
+      <div class="platform-card reveal" style="background:var(--tx);color:var(--sf);border-radius:16px;padding:1.5rem;text-align:center;cursor:pointer;transition:opacity .18s,transform .14s;" onmouseenter="this.style.opacity='.88';this.style.transform='translateY(-2px)'" onmouseleave="this.style.opacity='1';this.style.transform='translateY(0)'">
+        <div style="font-size:28px;margin-bottom:.75rem;">🌐</div>
+        <div style="font-size:16px;font-weight:500;margin-bottom:.35rem;">Web App</div>
+        <div style="font-size:12px;opacity:.6;margin-bottom:1rem;">Works in any browser</div>
+        <div style="display:inline-block;font-size:11px;padding:4px 12px;border-radius:20px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.9);">Available now →</div>
+      </div>
+    </a>
+    <div class="platform-card reveal" style="background:var(--sf);border:1px solid var(--bd);border-radius:16px;padding:1.5rem;text-align:center;opacity:.7;">
+      <div style="font-size:28px;margin-bottom:.75rem;">📱</div>
+      <div style="font-size:16px;font-weight:500;color:var(--tx);margin-bottom:.35rem;">iOS App</div>
+      <div style="font-size:12px;color:var(--t2);margin-bottom:1rem;">Install on your home screen</div>
+      <div style="display:inline-block;font-size:11px;padding:4px 12px;border-radius:20px;background:var(--s2);color:var(--t3);">Coming soon</div>
+    </div>
+    <div class="platform-card reveal" style="background:var(--sf);border:1px solid var(--bd);border-radius:16px;padding:1.5rem;text-align:center;opacity:.7;">
+      <div style="font-size:28px;margin-bottom:.75rem;">🤖</div>
+      <div style="font-size:16px;font-weight:500;color:var(--tx);margin-bottom:.35rem;">Android App</div>
+      <div style="font-size:12px;color:var(--t2);margin-bottom:1rem;">Google Play</div>
+      <div style="display:inline-block;font-size:11px;padding:4px 12px;border-radius:20px;background:var(--s2);color:var(--t3);">Coming soon</div>
+    </div>
+  </div>
+</section>
 <footer>
   <div class="ft-logo">Clar<span class="lo">o</span></div>
   <div class="ft-tag">speak clearly</div>
