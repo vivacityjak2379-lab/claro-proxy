@@ -800,40 +800,60 @@ function checkOnboarding(){
   return false;
 }
 
-var _obStep = 'lang';
 var _obQuiz = [];
 var _obQIdx = 0;
 var _obSelIdx = -1;
 
 function showOnboarding(){
-  const overlay = document.getElementById('onboardingOverlay');
-  if(!overlay) return;
-  _obQuiz = [];
-  _obQIdx = 0;
-  _obSelIdx = -1;
-  overlay.style.display = 'flex';
-  overlay.style.opacity = '1';
-  obRenderLang();
+  _obQuiz = []; _obQIdx = 0; _obSelIdx = -1;
+  const ov = document.getElementById('onboardingOverlay');
+  if(!ov) return;
+  ov.style.display = 'flex';
+  ov.style.opacity = '0';
+  setTimeout(function(){ ov.style.transition='opacity .4s'; ov.style.opacity='1'; }, 50);
+  obStep('lang');
 }
 
-function obRenderLang(){
-  const overlay = document.getElementById('onboardingOverlay');
-  if(!overlay) return;
-  overlay.innerHTML = '';
-  overlay.style.display = 'flex';
-  overlay.style.opacity = '1';
+function obStep(step){
+  const ov = document.getElementById('onboardingOverlay');
+  if(!ov) return;
+
+  // Fade out current content
+  const existing = ov.querySelector('.ob-wrap');
+  if(existing){
+    existing.style.transition = 'opacity .2s,transform .2s';
+    existing.style.opacity = '0';
+    existing.style.transform = 'translateY(8px)';
+    setTimeout(function(){ ov.innerHTML=''; obRender(step); }, 200);
+  } else {
+    obRender(step);
+  }
+}
+
+function obRender(step){
+  const ov = document.getElementById('onboardingOverlay');
+  if(!ov) return;
 
   const wrap = document.createElement('div');
-  wrap.style.cssText = 'max-width:400px;width:90%;padding:2.5rem 1.5rem;text-align:center;animation:fadeUp .4s ease both;';
+  wrap.className = 'ob-wrap';
+  wrap.style.cssText = 'max-width:440px;width:90%;padding:2.5rem 1.5rem;text-align:center;opacity:0;transform:translateY(8px);transition:opacity .3s,transform .3s;';
+  ov.appendChild(wrap);
+  setTimeout(function(){ wrap.style.opacity='1'; wrap.style.transform='translateY(0)'; }, 30);
 
+  if(step === 'lang') obBuildLang(wrap);
+  else if(step === 'quiz') obBuildQuiz(wrap);
+  else if(step === 'name') obBuildName(wrap);
+}
+
+function obBuildLang(wrap){
   // Logo
   const logo = document.createElement('div');
-  logo.style.cssText = "font-family:'Cormorant Garamond',serif;font-size:52px;font-weight:300;color:var(--tx);margin-bottom:.35rem;";
+  logo.style.cssText = "font-family:'Cormorant Garamond',serif;font-size:52px;font-weight:300;color:var(--tx);margin-bottom:.25rem;";
   logo.innerHTML = 'Clar<span style="color:var(--ac)">o</span>';
   wrap.appendChild(logo);
 
   const tag = document.createElement('div');
-  tag.style.cssText = 'font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);margin-bottom:2rem;';
+  tag.style.cssText = 'font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--t3);margin-bottom:2rem;';
   tag.textContent = 'speak clearly';
   wrap.appendChild(tag);
 
@@ -843,181 +863,163 @@ function obRenderLang(){
   wrap.appendChild(q);
 
   const grid = document.createElement('div');
-  grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.5rem;';
+  grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:10px;';
 
-  const langs = [
-    {code:'en', abbr:'En', name:'English', nat:'English'},
-    {code:'ru', abbr:'Ru', name:'Russian', nat:'Русский'},
-    {code:'es', abbr:'Es', name:'Spanish', nat:'Español'},
-    {code:'fr', abbr:'Fr', name:'French', nat:'Français'}
-  ];
-
-  langs.forEach(function(l){
+  [{code:'en',abbr:'En',name:'English',nat:'English'},
+   {code:'ru',abbr:'Ru',name:'Russian',nat:'Русский'},
+   {code:'es',abbr:'Es',name:'Spanish',nat:'Español'},
+   {code:'fr',abbr:'Fr',name:'French',nat:'Français'}
+  ].forEach(function(l){
     const btn = document.createElement('div');
-    btn.style.cssText = 'border:1.5px solid var(--bd);border-radius:14px;padding:14px 10px;cursor:pointer;transition:all .15s;background:var(--sf);';
+    btn.style.cssText = 'border:1.5px solid var(--bd);border-radius:14px;padding:14px 10px;cursor:pointer;transition:all .18s;background:var(--sf);';
     btn.innerHTML =
       '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--ac);margin-bottom:3px;">'+l.abbr+'</div>'+
       '<div style="font-size:13px;font-weight:500;color:var(--tx);">'+l.name+'</div>'+
       '<div style="font-size:10px;color:var(--t3);">'+l.nat+'</div>';
-    btn.addEventListener('mouseenter', function(){ btn.style.borderColor='var(--ac)'; btn.style.background='var(--al)'; });
-    btn.addEventListener('mouseleave', function(){ if(!btn.classList.contains('sel')){ btn.style.borderColor='var(--bd)'; btn.style.background='var(--sf)'; }});
-    btn.addEventListener('click', function(){
-      grid.querySelectorAll('div').forEach(function(x){ x.style.borderColor='var(--bd)'; x.style.background='var(--sf)'; x.classList.remove('sel'); });
+    btn.onmouseenter = function(){ btn.style.borderColor='var(--ac)'; btn.style.background='var(--al)'; };
+    btn.onmouseleave = function(){ if(!btn._sel){ btn.style.borderColor='var(--bd)'; btn.style.background='var(--sf)'; }};
+    btn.onclick = function(){
+      grid.querySelectorAll('div').forEach(function(x){ x._sel=false; x.style.borderColor='var(--bd)'; x.style.background='var(--sf)'; });
+      btn._sel = true;
       btn.style.borderColor = 'var(--ac)';
       btn.style.background = 'var(--al)';
-      btn.classList.add('sel');
       lang = l.code;
       localStorage.setItem('claro_lang', lang);
       updateLangUI();
       applyLangToUI();
-      setTimeout(function(){ obRenderQuiz(0); }, 250);
-    });
+      setTimeout(function(){ obStep('quiz'); }, 280);
+    };
     grid.appendChild(btn);
   });
   wrap.appendChild(grid);
-  overlay.appendChild(wrap);
 }
 
-function obRenderQuiz(qIdx){
-  const overlay = document.getElementById('onboardingOverlay');
-  overlay.innerHTML = '';
-  _obQIdx = qIdx;
-  _obSelIdx = -1;
-
-  const qList = (QUIZ[lang] || QUIZ.en);
+function obBuildQuiz(wrap){
+  const qList = QUIZ[lang] || QUIZ.en;
   const total = qList.length;
-  const q = qList[qIdx];
+  const q = qList[_obQIdx];
 
-  const wrap = document.createElement('div');
-  wrap.style.cssText = 'max-width:440px;width:90%;padding:2.5rem 1.5rem;';
-
-  // Progress bar
-  const progWrap = document.createElement('div');
-  progWrap.style.cssText = 'height:3px;background:var(--bd);border-radius:2px;margin-bottom:1.5rem;overflow:hidden;';
-  const progFill = document.createElement('div');
-  progFill.style.cssText = 'height:100%;background:var(--ac);border-radius:2px;transition:width .3s;width:'+Math.round(qIdx/total*100)+'%;';
-  progWrap.appendChild(progFill);
-  wrap.appendChild(progWrap);
+  // Progress
+  const prog = document.createElement('div');
+  prog.style.cssText = 'height:2px;background:var(--bd);border-radius:2px;margin-bottom:1.5rem;overflow:hidden;';
+  const fill = document.createElement('div');
+  fill.style.cssText = 'height:100%;background:var(--ac);border-radius:2px;width:'+Math.round(_obQIdx/total*100)+'%;transition:width .3s;';
+  prog.appendChild(fill); wrap.appendChild(prog);
 
   // Step label
   const step = document.createElement('div');
-  step.style.cssText = 'font-size:11px;color:var(--t3);margin-bottom:.5rem;letter-spacing:.06em;text-transform:uppercase;';
-  step.textContent = (lang==='ru'?'Вопрос ':lang==='es'?'Pregunta ':lang==='fr'?'Question ':'Question ')+(qIdx+1)+' / '+total;
+  step.style.cssText = 'font-size:10px;color:var(--t3);margin-bottom:.5rem;letter-spacing:.06em;text-transform:uppercase;';
+  const stepW = {en:'Question',ru:'Вопрос',es:'Pregunta',fr:'Question'};
+  step.textContent = (stepW[lang]||'Question')+' '+(_obQIdx+1)+' / '+total;
   wrap.appendChild(step);
 
-  // Question text
-  const qText = document.createElement('div');
-  qText.style.cssText = "font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;color:var(--tx);margin-bottom:1.5rem;line-height:1.4;";
-  qText.textContent = q.q;
-  wrap.appendChild(qText);
+  // Question
+  const qEl = document.createElement('div');
+  qEl.style.cssText = "font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;color:var(--tx);margin-bottom:1.5rem;line-height:1.4;text-align:left;";
+  qEl.textContent = q.q;
+  wrap.appendChild(qEl);
 
   // Options
   const opts = document.createElement('div');
   opts.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin-bottom:1.5rem;';
+  let selIdx = -1;
 
-  let selectedBtn = null;
   q.a.forEach(function(answer, i){
     const btn = document.createElement('button');
-    btn.style.cssText = 'border:1.5px solid var(--bd);border-radius:10px;padding:12px 16px;font-size:14px;color:var(--t2);text-align:left;transition:all .15s;background:var(--sf);cursor:pointer;font-family:DM Sans,sans-serif;width:100%;';
+    btn.style.cssText = 'border:1.5px solid var(--bd);border-radius:10px;padding:11px 16px;font-size:14px;color:var(--t2);text-align:left;transition:all .15s;background:var(--sf);cursor:pointer;font-family:DM Sans,sans-serif;width:100%;';
     btn.textContent = answer;
-    btn.addEventListener('mouseenter', function(){ if(!btn.classList.contains('sel')) btn.style.borderColor='var(--ac)'; });
-    btn.addEventListener('mouseleave', function(){ if(!btn.classList.contains('sel')) btn.style.borderColor='var(--bd)'; });
-    btn.addEventListener('click', function(){
-      if(selectedBtn){ selectedBtn.style.borderColor='var(--bd)'; selectedBtn.style.background='var(--sf)'; selectedBtn.style.color='var(--t2)'; selectedBtn.classList.remove('sel'); }
-      btn.style.borderColor = 'var(--ac)';
-      btn.style.background = 'var(--al)';
-      btn.style.color = 'var(--ac)';
-      btn.classList.add('sel');
-      selectedBtn = btn;
+    btn.onmouseenter = function(){ if(selIdx!==i) btn.style.borderColor='var(--ac)'; };
+    btn.onmouseleave = function(){ if(selIdx!==i) btn.style.borderColor='var(--bd)'; };
+    btn.onclick = function(){
+      selIdx = i;
       _obSelIdx = i;
-      nextBtn.style.opacity = '1';
-      nextBtn.style.pointerEvents = 'auto';
-    });
+      opts.querySelectorAll('button').forEach(function(b,j){
+        if(j===i){ b.style.borderColor='var(--ac)'; b.style.background='var(--al)'; b.style.color='var(--ac)'; }
+        else { b.style.borderColor='var(--bd)'; b.style.background='var(--sf)'; b.style.color='var(--t2)'; }
+      });
+      nextBtn.style.opacity='1'; nextBtn.style.pointerEvents='auto';
+    };
     opts.appendChild(btn);
   });
   wrap.appendChild(opts);
 
   // Next button
   const nextBtn = document.createElement('button');
-  nextBtn.style.cssText = 'width:100%;padding:.82rem;border-radius:50px;background:var(--tx);color:var(--sf);border:none;font-size:14px;cursor:pointer;font-family:DM Sans,sans-serif;opacity:.35;pointer-events:none;transition:opacity .2s;';
-  const nextLabels = {en:'Next →', ru:'Далее →', es:'Siguiente →', fr:'Suivant →'};
-  nextBtn.textContent = nextLabels[lang] || 'Next →';
-  nextBtn.addEventListener('click', function(){
-    if(_obSelIdx === -1) return;
+  nextBtn.style.cssText = 'width:100%;padding:.82rem;border-radius:50px;background:var(--tx);color:var(--sf);border:none;font-size:14px;cursor:pointer;font-family:DM Sans,sans-serif;opacity:.3;pointer-events:none;transition:opacity .2s;';
+  const nextW = {en:'Next →',ru:'Далее →',es:'Siguiente →',fr:'Suivant →'};
+  nextBtn.textContent = nextW[lang]||'Next →';
+  nextBtn.onclick = function(){
+    if(_obSelIdx===-1) return;
     _obQuiz.push(q.a[_obSelIdx]);
-    if(qIdx + 1 < total){
-      obRenderQuiz(qIdx + 1);
+    if(_obQIdx+1 < total){
+      _obQIdx++;
+      _obSelIdx = -1;
+      obStep('quiz');
     } else {
       localStorage.setItem('claro_quiz', JSON.stringify(_obQuiz));
-      obRenderName();
+      obStep('name');
     }
-  });
+  };
   wrap.appendChild(nextBtn);
-  overlay.appendChild(wrap);
 }
 
-function obRenderName(){
-  const overlay = document.getElementById('onboardingOverlay');
-  overlay.innerHTML = '';
-
-  const wrap = document.createElement('div');
-  wrap.style.cssText = 'max-width:380px;width:90%;padding:2.5rem 1.5rem;text-align:center;';
-
+function obBuildName(wrap){
   const q = document.createElement('div');
-  q.style.cssText = "font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:var(--tx);margin-bottom:.5rem;";
-  const qs = {en:'One last thing.', ru:'Последний вопрос.', es:'Una última cosa.', fr:"Une dernière chose."};
-  q.textContent = qs[lang] || qs.en;
+  q.style.cssText = "font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;color:var(--tx);margin-bottom:.5rem;";
+  const qs = {en:'One last thing.',ru:'Последний вопрос.',es:'Una última cosa.',fr:'Une dernière chose.'};
+  q.textContent = qs[lang]||qs.en;
   wrap.appendChild(q);
 
   const sub = document.createElement('div');
-  sub.style.cssText = 'font-size:14px;color:var(--t2);font-weight:300;margin-bottom:1.5rem;';
-  const subs = {en:'What should Claro call you?', ru:'Как тебя называть?', es:'¿Cómo llamarte?', fr:"Comment t'appeler?"};
-  sub.textContent = subs[lang] || subs.en;
+  sub.style.cssText = 'font-size:14px;color:var(--t2);font-weight:300;margin-bottom:1.75rem;';
+  const subs = {en:'What should Claro call you?',ru:'Как тебя называть?',es:'¿Cómo llamarte?',fr:"Comment t'appeler?"};
+  sub.textContent = subs[lang]||subs.en;
   wrap.appendChild(sub);
 
   const inp = document.createElement('input');
-  inp.type = 'text';
-  inp.maxLength = 30;
-  const phs = {en:'Your name (optional)', ru:'Твоё имя (необязательно)', es:'Tu nombre (opcional)', fr:"Ton prénom (optionnel)"};
-  inp.placeholder = phs[lang] || phs.en;
-  inp.style.cssText = 'width:100%;padding:.82rem 1rem;border:1.5px solid var(--bd);border-radius:12px;font-size:15px;background:var(--bg);color:var(--tx);outline:none;text-align:center;font-family:DM Sans,sans-serif;margin-bottom:1rem;transition:border-color .2s;';
-  inp.addEventListener('focus', function(){ inp.style.borderColor='var(--ac)'; });
-  inp.addEventListener('blur', function(){ inp.style.borderColor='var(--bd)'; });
-  inp.addEventListener('keydown', function(e){ if(e.key==='Enter') finishBtn.click(); });
+  inp.type='text'; inp.maxLength=30;
+  const phs = {en:'Your name (optional)',ru:'Твоё имя (необязательно)',es:'Tu nombre (opcional)',fr:'Ton prénom (optionnel)'};
+  inp.placeholder = phs[lang]||phs.en;
+  inp.style.cssText = 'width:100%;padding:.85rem 1rem;border:1.5px solid var(--bd);border-radius:12px;font-size:15px;background:var(--bg);color:var(--tx);outline:none;text-align:center;font-family:DM Sans,sans-serif;margin-bottom:1rem;transition:border-color .2s;';
+  inp.onfocus = function(){ inp.style.borderColor='var(--ac)'; };
+  inp.onblur  = function(){ inp.style.borderColor='var(--bd)'; };
+  inp.onkeydown = function(e){ if(e.key==='Enter') done(); };
   wrap.appendChild(inp);
 
-  const finishBtn = document.createElement('button');
-  finishBtn.style.cssText = 'width:100%;padding:.85rem;border-radius:50px;background:var(--tx);color:var(--sf);border:none;font-size:14px;cursor:pointer;font-family:DM Sans,sans-serif;transition:opacity .18s;';
-  const starts = {en:'Start talking →', ru:'Начать говорить →', es:'Empezar →', fr:"Commencer →"};
-  finishBtn.textContent = starts[lang] || starts.en;
-  finishBtn.addEventListener('mouseenter', function(){ finishBtn.style.opacity='.85'; });
-  finishBtn.addEventListener('mouseleave', function(){ finishBtn.style.opacity='1'; });
-  finishBtn.addEventListener('click', function(){
-    const name = inp.value.trim();
-    if(name){ userName = name; localStorage.setItem('claro_name', name); }
-    // Fade out
-    overlay.style.transition = 'opacity .4s';
-    overlay.style.opacity = '0';
-    setTimeout(function(){
-      overlay.style.display = 'none';
-      overlay.style.opacity = '';
-      updateUI();
-      newChat();
-      registerUser();
-    }, 400);
-  });
-  wrap.appendChild(finishBtn);
+  const startBtn = document.createElement('button');
+  startBtn.style.cssText = 'width:100%;padding:.85rem;border-radius:50px;background:var(--tx);color:var(--sf);border:none;font-size:14px;cursor:pointer;font-family:DM Sans,sans-serif;transition:opacity .18s;';
+  const starts = {en:'Start talking →',ru:'Начать говорить →',es:'Empezar →',fr:'Commencer →'};
+  startBtn.textContent = starts[lang]||starts.en;
+  startBtn.onmouseenter = function(){ startBtn.style.opacity='.85'; };
+  startBtn.onmouseleave = function(){ startBtn.style.opacity='1'; };
 
-  // Skip link
+  function done(){
+    const name = inp.value.trim();
+    if(name){ userName=name; localStorage.setItem('claro_name',name); }
+    const ov = document.getElementById('onboardingOverlay');
+    if(ov){
+      ov.style.transition='opacity .4s';
+      ov.style.opacity='0';
+      setTimeout(function(){
+        ov.style.display='none';
+        ov.style.opacity='';
+        ov.style.transition='';
+        updateUI(); applyLangToUI(); newChat(); registerUser();
+      }, 400);
+    }
+  }
+  startBtn.onclick = done;
+  wrap.appendChild(startBtn);
+
+  // Skip
   const skip = document.createElement('div');
-  skip.style.cssText = 'font-size:12px;color:var(--t3);margin-top:1rem;cursor:pointer;';
-  const skips = {en:'Skip', ru:'Пропустить', es:'Omitir', fr:"Ignorer"};
-  skip.textContent = skips[lang] || skips.en;
-  skip.addEventListener('click', function(){ finishBtn.click(); });
+  skip.style.cssText = 'font-size:12px;color:var(--t3);margin-top:1rem;cursor:pointer;text-decoration:underline;';
+  const skips = {en:'Skip',ru:'Пропустить',es:'Omitir',fr:'Ignorer'};
+  skip.textContent = skips[lang]||skips.en;
+  skip.onclick = done;
   wrap.appendChild(skip);
 
-  overlay.appendChild(wrap);
-  setTimeout(function(){ inp.focus(); }, 100);
+  setTimeout(function(){ inp.focus(); }, 150);
 }
 
 // ═══ REGISTER USER ═══
