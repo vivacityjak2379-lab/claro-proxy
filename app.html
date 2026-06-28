@@ -919,6 +919,12 @@ function obBuildQuiz(wrap){
   qEl.textContent = q.q;
   wrap.appendChild(qEl);
 
+  // Next button (declared here so forEach can reference it)
+  const nextBtn = document.createElement('button');
+  nextBtn.style.cssText = 'width:100%;padding:.82rem;border-radius:50px;background:var(--tx);color:var(--sf);border:none;font-size:14px;cursor:pointer;font-family:DM Sans,sans-serif;opacity:.3;pointer-events:none;transition:opacity .2s;';
+  const nextW = {en:'Next →',ru:'Далее →',es:'Siguiente →',fr:'Suivant →'};
+  nextBtn.textContent = nextW[lang]||'Next →';
+
   // Options
   const opts = document.createElement('div');
   opts.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin-bottom:1.5rem;';
@@ -943,16 +949,12 @@ function obBuildQuiz(wrap){
   });
   wrap.appendChild(opts);
 
-  // Next button
-  const nextBtn = document.createElement('button');
-  nextBtn.style.cssText = 'width:100%;padding:.82rem;border-radius:50px;background:var(--tx);color:var(--sf);border:none;font-size:14px;cursor:pointer;font-family:DM Sans,sans-serif;opacity:.3;pointer-events:none;transition:opacity .2s;';
-  const nextW = {en:'Next →',ru:'Далее →',es:'Siguiente →',fr:'Suivant →'};
-  nextBtn.textContent = nextW[lang]||'Next →';
   nextBtn.onclick = function(){
-    if(_obSelIdx===-1) return;
-    _obQuiz.push(q.a[_obSelIdx]);
-    if(_obQIdx+1 < total){
-      _obQIdx++;
+    if(_obSelIdx === -1) return;
+    _obQuiz.push(qList[_obQIdx].a[_obSelIdx]);
+    const nextIdx = _obQIdx + 1;
+    if(nextIdx < total){
+      _obQIdx = nextIdx;
       _obSelIdx = -1;
       obStep('quiz');
     } else {
