@@ -796,126 +796,228 @@ function checkOnboarding(){
     showOnboarding();
     return true;
   }
-  lang = localStorage.getItem('claro_lang');
+  lang = localStorage.getItem('claro_lang') || 'en';
   return false;
 }
 
-function showOnboarding(){
-  const overlay = document.getElementById('onboardingOverlay');
-  if(!overlay) return;
-  overlay.innerHTML = buildOnboardingHTML();
-  overlay.style.display = 'flex';
-  overlay.classList.remove('done');
-  initOnboarding(overlay);
-}
-
-function buildOnboardingHTML(){
-  return `
-  <div style="max-width:420px;width:90%;padding:2.5rem 2rem;text-align:center;">
-    <div id="ob-step-lang">
-      <div style="font-family:'Cormorant Garamond',serif;font-size:52px;font-weight:300;color:var(--tx);margin-bottom:.5rem;">Clar<span style="color:var(--ac)">o</span></div>
-      <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);margin-bottom:2rem;">speak clearly</div>
-      <div style="font-size:14px;color:var(--t2);margin-bottom:1.5rem;">Choose your language</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:2rem;">
-        <div class="ob-lang" data-lang="en" onclick="obPickLang(this)"><div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-style:italic;color:var(--ac)">En</div><div style="font-size:13px;font-weight:500;margin-top:2px;">English</div></div>
-        <div class="ob-lang" data-lang="ru" onclick="obPickLang(this)"><div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-style:italic;color:var(--ac)">Ru</div><div style="font-size:13px;font-weight:500;margin-top:2px;">Russian</div></div>
-        <div class="ob-lang" data-lang="es" onclick="obPickLang(this)"><div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-style:italic;color:var(--ac)">Es</div><div style="font-size:13px;font-weight:500;margin-top:2px;">Spanish</div></div>
-        <div class="ob-lang" data-lang="fr" onclick="obPickLang(this)"><div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-style:italic;color:var(--ac)">Fr</div><div style="font-size:13px;font-weight:500;margin-top:2px;">French</div></div>
-      </div>
-    </div>
-    <div id="ob-step-quiz" style="display:none;">
-      <div style="height:3px;background:var(--bd);border-radius:2px;margin-bottom:1.5rem;"><div id="ob-progress" style="height:100%;background:var(--ac);border-radius:2px;width:0%;transition:width .3s;"></div></div>
-      <div id="ob-q-num" style="font-size:11px;color:var(--t3);margin-bottom:.5rem;letter-spacing:.06em;text-transform:uppercase;"></div>
-      <div id="ob-q-text" style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;color:var(--tx);margin-bottom:1.5rem;line-height:1.4;"></div>
-      <div id="ob-opts" style="display:flex;flex-direction:column;gap:8px;margin-bottom:1.5rem;"></div>
-      <button id="ob-next" onclick="obNext()" style="padding:.82rem 2rem;border-radius:50px;background:var(--tx);color:var(--sf);border:none;font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;opacity:.4;pointer-events:none;width:100%;">Next →</button>
-    </div>
-    <div id="ob-step-name" style="display:none;">
-      <div style="font-size:14px;color:var(--t2);margin-bottom:1.5rem;">What should Claro call you? <span style="color:var(--t3)">(optional)</span></div>
-      <input id="ob-name-inp" type="text" placeholder="Your name" style="width:100%;padding:.82rem 1rem;border:1.5px solid var(--bd);border-radius:12px;font-size:14px;background:var(--bg);color:var(--tx);outline:none;text-align:center;font-family:'DM Sans',sans-serif;margin-bottom:1rem;" maxlength="30"/>
-      <button onclick="obFinish()" style="width:100%;padding:.82rem;border-radius:50px;background:var(--tx);color:var(--sf);border:none;font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;">Start talking →</button>
-    </div>
-  </div>`;
-}
-
-var _obLang = 'en';
+var _obStep = 'lang';
 var _obQuiz = [];
 var _obQIdx = 0;
 var _obSelIdx = -1;
 
-function initOnboarding(overlay){
-  const style = document.createElement('style');
-  style.textContent = '.ob-lang{border:1.5px solid var(--bd);border-radius:14px;padding:14px;cursor:pointer;transition:all .15s;background:var(--sf);}.ob-lang:hover,.ob-lang.on{border-color:var(--ac);background:var(--al);}.ob-opt{border:1.5px solid var(--bd);border-radius:10px;padding:12px 16px;cursor:pointer;font-size:14px;color:var(--t2);text-align:left;transition:all .15s;background:var(--sf);}.ob-opt:hover,.ob-opt.on{border-color:var(--ac);background:var(--al);color:var(--ac);}';
-  overlay.appendChild(style);
-}
-
-function obPickLang(el){
-  document.querySelectorAll('.ob-lang').forEach(function(x){ x.classList.remove('on'); });
-  el.classList.add('on');
-  _obLang = el.dataset.lang;
-  lang = _obLang;
-  localStorage.setItem('claro_lang', lang);
-  setTimeout(function(){
-    document.getElementById('ob-step-lang').style.display = 'none';
-    document.getElementById('ob-step-quiz').style.display = 'block';
-    obShowQ(0);
-  }, 300);
-}
-
-function obShowQ(idx){
-  _obQIdx = idx;
+function showOnboarding(){
+  const overlay = document.getElementById('onboardingOverlay');
+  if(!overlay) return;
+  _obQuiz = [];
+  _obQIdx = 0;
   _obSelIdx = -1;
-  const q = QUIZ[lang] ? QUIZ[lang][idx] : QUIZ.en[idx];
-  const total = QUIZ[lang] ? QUIZ[lang].length : QUIZ.en.length;
-  document.getElementById('ob-progress').style.width = (idx/total*100)+'%';
-  document.getElementById('ob-q-num').textContent = 'Question '+(idx+1)+' of '+total;
-  document.getElementById('ob-q-text').textContent = q.q;
-  const optsEl = document.getElementById('ob-opts');
-  optsEl.innerHTML = '';
-  q.a.forEach(function(a, i){
-    const btn = document.createElement('button');
-    btn.className = 'ob-opt';
-    btn.textContent = a;
-    btn.onclick = function(){
-      document.querySelectorAll('.ob-opt').forEach(function(x){ x.classList.remove('on'); });
-      btn.classList.add('on');
-      _obSelIdx = i;
-      const next = document.getElementById('ob-next');
-      next.style.opacity = '1';
-      next.style.pointerEvents = 'auto';
-    };
-    optsEl.appendChild(btn);
+  overlay.style.display = 'flex';
+  overlay.style.opacity = '1';
+  obRenderLang();
+}
+
+function obRenderLang(){
+  const overlay = document.getElementById('onboardingOverlay');
+  if(!overlay) return;
+  overlay.innerHTML = '';
+  overlay.style.display = 'flex';
+  overlay.style.opacity = '1';
+
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'max-width:400px;width:90%;padding:2.5rem 1.5rem;text-align:center;animation:fadeUp .4s ease both;';
+
+  // Logo
+  const logo = document.createElement('div');
+  logo.style.cssText = "font-family:'Cormorant Garamond',serif;font-size:52px;font-weight:300;color:var(--tx);margin-bottom:.35rem;";
+  logo.innerHTML = 'Clar<span style="color:var(--ac)">o</span>';
+  wrap.appendChild(logo);
+
+  const tag = document.createElement('div');
+  tag.style.cssText = 'font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);margin-bottom:2rem;';
+  tag.textContent = 'speak clearly';
+  wrap.appendChild(tag);
+
+  const q = document.createElement('div');
+  q.style.cssText = 'font-size:15px;color:var(--t2);margin-bottom:1.25rem;font-weight:300;';
+  q.textContent = 'Choose your language';
+  wrap.appendChild(q);
+
+  const grid = document.createElement('div');
+  grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.5rem;';
+
+  const langs = [
+    {code:'en', abbr:'En', name:'English', nat:'English'},
+    {code:'ru', abbr:'Ru', name:'Russian', nat:'Русский'},
+    {code:'es', abbr:'Es', name:'Spanish', nat:'Español'},
+    {code:'fr', abbr:'Fr', name:'French', nat:'Français'}
+  ];
+
+  langs.forEach(function(l){
+    const btn = document.createElement('div');
+    btn.style.cssText = 'border:1.5px solid var(--bd);border-radius:14px;padding:14px 10px;cursor:pointer;transition:all .15s;background:var(--sf);';
+    btn.innerHTML =
+      '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--ac);margin-bottom:3px;">'+l.abbr+'</div>'+
+      '<div style="font-size:13px;font-weight:500;color:var(--tx);">'+l.name+'</div>'+
+      '<div style="font-size:10px;color:var(--t3);">'+l.nat+'</div>';
+    btn.addEventListener('mouseenter', function(){ btn.style.borderColor='var(--ac)'; btn.style.background='var(--al)'; });
+    btn.addEventListener('mouseleave', function(){ if(!btn.classList.contains('sel')){ btn.style.borderColor='var(--bd)'; btn.style.background='var(--sf)'; }});
+    btn.addEventListener('click', function(){
+      grid.querySelectorAll('div').forEach(function(x){ x.style.borderColor='var(--bd)'; x.style.background='var(--sf)'; x.classList.remove('sel'); });
+      btn.style.borderColor = 'var(--ac)';
+      btn.style.background = 'var(--al)';
+      btn.classList.add('sel');
+      lang = l.code;
+      localStorage.setItem('claro_lang', lang);
+      updateLangUI();
+      applyLangToUI();
+      setTimeout(function(){ obRenderQuiz(0); }, 250);
+    });
+    grid.appendChild(btn);
   });
-  const next = document.getElementById('ob-next');
-  next.style.opacity = '.4';
-  next.style.pointerEvents = 'none';
+  wrap.appendChild(grid);
+  overlay.appendChild(wrap);
 }
 
-function obNext(){
-  if(_obSelIdx === -1) return;
-  const q = QUIZ[lang] ? QUIZ[lang][_obQIdx] : QUIZ.en[_obQIdx];
-  _obQuiz.push(q.a[_obSelIdx]);
-  const total = QUIZ[lang] ? QUIZ[lang].length : QUIZ.en.length;
-  if(_obQIdx + 1 < total){
-    obShowQ(_obQIdx + 1);
-  } else {
-    localStorage.setItem('claro_quiz', JSON.stringify(_obQuiz));
-    document.getElementById('ob-step-quiz').style.display = 'none';
-    document.getElementById('ob-step-name').style.display = 'block';
-  }
+function obRenderQuiz(qIdx){
+  const overlay = document.getElementById('onboardingOverlay');
+  overlay.innerHTML = '';
+  _obQIdx = qIdx;
+  _obSelIdx = -1;
+
+  const qList = (QUIZ[lang] || QUIZ.en);
+  const total = qList.length;
+  const q = qList[qIdx];
+
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'max-width:440px;width:90%;padding:2.5rem 1.5rem;';
+
+  // Progress bar
+  const progWrap = document.createElement('div');
+  progWrap.style.cssText = 'height:3px;background:var(--bd);border-radius:2px;margin-bottom:1.5rem;overflow:hidden;';
+  const progFill = document.createElement('div');
+  progFill.style.cssText = 'height:100%;background:var(--ac);border-radius:2px;transition:width .3s;width:'+Math.round(qIdx/total*100)+'%;';
+  progWrap.appendChild(progFill);
+  wrap.appendChild(progWrap);
+
+  // Step label
+  const step = document.createElement('div');
+  step.style.cssText = 'font-size:11px;color:var(--t3);margin-bottom:.5rem;letter-spacing:.06em;text-transform:uppercase;';
+  step.textContent = (lang==='ru'?'Вопрос ':lang==='es'?'Pregunta ':lang==='fr'?'Question ':'Question ')+(qIdx+1)+' / '+total;
+  wrap.appendChild(step);
+
+  // Question text
+  const qText = document.createElement('div');
+  qText.style.cssText = "font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;color:var(--tx);margin-bottom:1.5rem;line-height:1.4;";
+  qText.textContent = q.q;
+  wrap.appendChild(qText);
+
+  // Options
+  const opts = document.createElement('div');
+  opts.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin-bottom:1.5rem;';
+
+  let selectedBtn = null;
+  q.a.forEach(function(answer, i){
+    const btn = document.createElement('button');
+    btn.style.cssText = 'border:1.5px solid var(--bd);border-radius:10px;padding:12px 16px;font-size:14px;color:var(--t2);text-align:left;transition:all .15s;background:var(--sf);cursor:pointer;font-family:DM Sans,sans-serif;width:100%;';
+    btn.textContent = answer;
+    btn.addEventListener('mouseenter', function(){ if(!btn.classList.contains('sel')) btn.style.borderColor='var(--ac)'; });
+    btn.addEventListener('mouseleave', function(){ if(!btn.classList.contains('sel')) btn.style.borderColor='var(--bd)'; });
+    btn.addEventListener('click', function(){
+      if(selectedBtn){ selectedBtn.style.borderColor='var(--bd)'; selectedBtn.style.background='var(--sf)'; selectedBtn.style.color='var(--t2)'; selectedBtn.classList.remove('sel'); }
+      btn.style.borderColor = 'var(--ac)';
+      btn.style.background = 'var(--al)';
+      btn.style.color = 'var(--ac)';
+      btn.classList.add('sel');
+      selectedBtn = btn;
+      _obSelIdx = i;
+      nextBtn.style.opacity = '1';
+      nextBtn.style.pointerEvents = 'auto';
+    });
+    opts.appendChild(btn);
+  });
+  wrap.appendChild(opts);
+
+  // Next button
+  const nextBtn = document.createElement('button');
+  nextBtn.style.cssText = 'width:100%;padding:.82rem;border-radius:50px;background:var(--tx);color:var(--sf);border:none;font-size:14px;cursor:pointer;font-family:DM Sans,sans-serif;opacity:.35;pointer-events:none;transition:opacity .2s;';
+  const nextLabels = {en:'Next →', ru:'Далее →', es:'Siguiente →', fr:'Suivant →'};
+  nextBtn.textContent = nextLabels[lang] || 'Next →';
+  nextBtn.addEventListener('click', function(){
+    if(_obSelIdx === -1) return;
+    _obQuiz.push(q.a[_obSelIdx]);
+    if(qIdx + 1 < total){
+      obRenderQuiz(qIdx + 1);
+    } else {
+      localStorage.setItem('claro_quiz', JSON.stringify(_obQuiz));
+      obRenderName();
+    }
+  });
+  wrap.appendChild(nextBtn);
+  overlay.appendChild(wrap);
 }
 
-function obFinish(){
-  const nameInp = document.getElementById('ob-name-inp');
-  if(nameInp && nameInp.value.trim()){
-    userName = nameInp.value.trim();
-    localStorage.setItem('claro_name', userName);
-  }
-  document.getElementById('onboardingOverlay').classList.add('done');
-  document.getElementById('onboardingOverlay').style.display = 'none';
-  updateUI();
-  newChat();
-  registerUser();
+function obRenderName(){
+  const overlay = document.getElementById('onboardingOverlay');
+  overlay.innerHTML = '';
+
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'max-width:380px;width:90%;padding:2.5rem 1.5rem;text-align:center;';
+
+  const q = document.createElement('div');
+  q.style.cssText = "font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:var(--tx);margin-bottom:.5rem;";
+  const qs = {en:'One last thing.', ru:'Последний вопрос.', es:'Una última cosa.', fr:"Une dernière chose."};
+  q.textContent = qs[lang] || qs.en;
+  wrap.appendChild(q);
+
+  const sub = document.createElement('div');
+  sub.style.cssText = 'font-size:14px;color:var(--t2);font-weight:300;margin-bottom:1.5rem;';
+  const subs = {en:'What should Claro call you?', ru:'Как тебя называть?', es:'¿Cómo llamarte?', fr:"Comment t'appeler?"};
+  sub.textContent = subs[lang] || subs.en;
+  wrap.appendChild(sub);
+
+  const inp = document.createElement('input');
+  inp.type = 'text';
+  inp.maxLength = 30;
+  const phs = {en:'Your name (optional)', ru:'Твоё имя (необязательно)', es:'Tu nombre (opcional)', fr:"Ton prénom (optionnel)"};
+  inp.placeholder = phs[lang] || phs.en;
+  inp.style.cssText = 'width:100%;padding:.82rem 1rem;border:1.5px solid var(--bd);border-radius:12px;font-size:15px;background:var(--bg);color:var(--tx);outline:none;text-align:center;font-family:DM Sans,sans-serif;margin-bottom:1rem;transition:border-color .2s;';
+  inp.addEventListener('focus', function(){ inp.style.borderColor='var(--ac)'; });
+  inp.addEventListener('blur', function(){ inp.style.borderColor='var(--bd)'; });
+  inp.addEventListener('keydown', function(e){ if(e.key==='Enter') finishBtn.click(); });
+  wrap.appendChild(inp);
+
+  const finishBtn = document.createElement('button');
+  finishBtn.style.cssText = 'width:100%;padding:.85rem;border-radius:50px;background:var(--tx);color:var(--sf);border:none;font-size:14px;cursor:pointer;font-family:DM Sans,sans-serif;transition:opacity .18s;';
+  const starts = {en:'Start talking →', ru:'Начать говорить →', es:'Empezar →', fr:"Commencer →"};
+  finishBtn.textContent = starts[lang] || starts.en;
+  finishBtn.addEventListener('mouseenter', function(){ finishBtn.style.opacity='.85'; });
+  finishBtn.addEventListener('mouseleave', function(){ finishBtn.style.opacity='1'; });
+  finishBtn.addEventListener('click', function(){
+    const name = inp.value.trim();
+    if(name){ userName = name; localStorage.setItem('claro_name', name); }
+    // Fade out
+    overlay.style.transition = 'opacity .4s';
+    overlay.style.opacity = '0';
+    setTimeout(function(){
+      overlay.style.display = 'none';
+      overlay.style.opacity = '';
+      updateUI();
+      newChat();
+      registerUser();
+    }, 400);
+  });
+  wrap.appendChild(finishBtn);
+
+  // Skip link
+  const skip = document.createElement('div');
+  skip.style.cssText = 'font-size:12px;color:var(--t3);margin-top:1rem;cursor:pointer;';
+  const skips = {en:'Skip', ru:'Пропустить', es:'Omitir', fr:"Ignorer"};
+  skip.textContent = skips[lang] || skips.en;
+  skip.addEventListener('click', function(){ finishBtn.click(); });
+  wrap.appendChild(skip);
+
+  overlay.appendChild(wrap);
+  setTimeout(function(){ inp.focus(); }, 100);
 }
 
 // ═══ REGISTER USER ═══
