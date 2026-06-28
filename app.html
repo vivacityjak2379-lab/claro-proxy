@@ -648,7 +648,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
 
   /* Web shell */
   .web-shell {
-    display: flex;
+    display: flex !important;
     height: 100vh;
     overflow: hidden;
     background: var(--sf);
@@ -944,7 +944,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
 <body>
 <div class="app" id="app">
 <!-- WEB SHELL (desktop only) -->
-<div class="web-shell" id="webShell" style="display:none;">
+<div class="web-shell" id="webShell">
 
   <!-- SIDEBAR -->
   <div class="web-sb" id="webSb">
@@ -1590,12 +1590,14 @@ function closePro(){
       el.classList.remove('show');
       el.style.opacity='';
       el.style.transition='';
-      // After Pro celebration → go straight to chat
+      // Go to chat with last used companion
       const lastMode = localStorage.getItem('claro_last_mode') || 'claro';
       const wb = document.getElementById('wb');
       if(wb) wb.style.display = 'none';
-      document.getElementById('ob').style.display = 'none';
+      const ob = document.getElementById('ob');
+      if(ob) ob.style.display = 'none';
       wbStartWith(lastMode);
+      updatePlanUI();
     }, 400);
   }
 }
@@ -2126,7 +2128,7 @@ function loadName(){
 
 function pickP(el){
   if(el.dataset.plan==='pro'){
-    window.location.href='https://buy.stripe.com/test_4gMbJ33x2ghZccy2Rxb7y00';
+    window.location.href='https://buy.stripe.com/test_4gMbJ33x2ghZccy2Rxb7y00?client_reference_id='+USER_ID;
     return;
   }
   document.querySelectorAll('.pc').forEach(c=>c.classList.remove('on'));
@@ -2138,13 +2140,13 @@ function pickP(el){
 function selPlan(p){
   if(p==='pro'){
     // Open Stripe in the SAME tab so the success redirect comes back here automatically
-    window.location.href='https://buy.stripe.com/test_4gMbJ33x2ghZccy2Rxb7y00';
+    window.location.href='https://buy.stripe.com/test_4gMbJ33x2ghZccy2Rxb7y00?client_reference_id='+USER_ID;
     return;
   }
   plan=p;localStorage.setItem('claro_plan',p);updatePlanUI();closeModal();
 }
 function openModal(){
-  window.location.href='https://buy.stripe.com/test_4gMbJ33x2ghZccy2Rxb7y00';
+  window.location.href='https://buy.stripe.com/test_4gMbJ33x2ghZccy2Rxb7y00?client_reference_id='+USER_ID;
 }
 function closeModal(){document.getElementById('planModal').classList.remove('open');}
 
@@ -2813,169 +2815,200 @@ async function syncProToServer(){
 
 // ═══ WEB DESKTOP ═══
 (function initWeb(){
-  if(window.innerWidth < 768) return; // mobile: use normal app
+  if(window.innerWidth < 768) return;
 
-  const shell = document.getElementById('webShell');
-  if(!shell) return;
+  var WEB = {
+    sbOpen: true,
+    focusOn: false,
 
-  // Show web shell
-  shell.style.display = 'flex';
+    init: function(){
+      // Move .app into web slot
+      const appEl = document.getElementById('app');
+      const slot = document.getElementById('webAppSlot');
+      if(appEl && slot){
+        slot.appendChild(appEl);
+        appEl.style.flex = '1';
+        appEl.style.overflow = 'hidden';
+      }
 
-  // Move .app into web main slot
-  const appEl = document.getElementById('app');
-  const slot = document.getElementById('webAppSlot');
-  if(appEl && slot) slot.appendChild(appEl);
+      WEB.buildCompanions();
+      WEB.updateUser();
+      WEB.updateHead();
+      WEB.bindKeys();
+      setInterval(function(){ WEB.updateUser(); WEB.updateHead(); }, 1500);
+    },
 
-  // Hide web shell from app's own flow
-  shell.style.position = 'fixed';
-  shell.style.inset = '0';
-  shell.style.zIndex = '1';
+    buildCompanions: function(){
+      const MODES = [
+        {mode:'claro',    name:'Claro',     sub:'mindfulness',
+         icon:'<svg width="14" height="14" viewBox="0 0 52 52" fill="none"><path d="M30 10 Q38 18 34 28 Q28 36 18 32 Q24 40 34 38 Q44 34 44 24 Q44 14 34 10Z" stroke="currentColor" stroke-width="1.4" fill="none" opacity=".6"/></svg>'},
+        {mode:'friend',   name:'Friend',    sub:'support & talk',
+         icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B8A94" stroke-width="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'},
+        {mode:'therapist',name:'Therapist', sub:'CBT & reflection',
+         icon:'<svg width="14" height="14" viewBox="0 0 52 52" fill="none"><circle cx="26" cy="26" r="14" stroke="currentColor" stroke-width="1" fill="none" opacity=".4"/><circle cx="26" cy="26" r="9" stroke="currentColor" stroke-width="1.1" fill="none" opacity=".7"/><circle cx="26" cy="26" r="4" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>'},
+        {mode:'mentor',   name:'Mentor',    sub:'goals & action',
+         icon:'<svg width="14" height="14" viewBox="0 0 52 52" fill="none"><circle cx="26" cy="26" r="13" stroke="currentColor" stroke-width="1" fill="none" opacity=".35"/><line x1="26" y1="13" x2="26" y2="39" stroke="currentColor" stroke-width="1.2"/><line x1="13" y1="26" x2="39" y2="26" stroke="currentColor" stroke-width="1.2"/></svg>'}
+      ];
+      const container = document.getElementById('webComps');
+      if(!container) return;
+      container.innerHTML = '';
+      MODES.forEach(function(m){
+        const div = document.createElement('div');
+        const isActive = (typeof mode !== 'undefined' ? mode : 'claro') === m.mode;
+        div.className = 'web-ci' + (isActive ? ' on' : '');
+        div.dataset.mode = m.mode;
+        div.innerHTML =
+          '<div class="web-ci-icon">' + m.icon + '</div>' +
+          '<div class="web-ci-text"><div class="web-ci-name">' + m.name + '</div><div class="web-ci-sub">' + m.sub + '</div></div>' +
+          '<div class="web-ci-dot" style="opacity:' + (isActive?'1':'0') + '"></div>';
+        div.addEventListener('click', function(){
+          document.querySelectorAll('.web-ci').forEach(function(x){
+            x.classList.remove('on');
+            var dot = x.querySelector('.web-ci-dot');
+            if(dot) dot.style.opacity = '0';
+          });
+          div.classList.add('on');
+          var dot = div.querySelector('.web-ci-dot');
+          if(dot) dot.style.opacity = '1';
+          // Switch companion using existing app functions
+          var modeEl = document.querySelector('[data-mode="' + m.mode + '"].cc');
+          if(modeEl){ modeEl.click(); }
+          else {
+            // fallback: set mode directly and start chat
+            if(typeof mode !== 'undefined') {
+              mode = m.mode;
+              localStorage.setItem('claro_last_mode', m.mode);
+              if(typeof startChat === 'function') startChat(m.mode);
+            }
+          }
+          WEB.updateHead();
+        });
+        container.appendChild(div);
+      });
+    },
 
-  // Build companion items in sidebar
-  const MODES_WEB = [
-    {mode:'claro',    name:'Claro',     sub:'mindfulness',   icon:'<svg width="14" height="14" viewBox="0 0 52 52" fill="none"><path d="M30 10 Q38 18 34 28 Q28 36 18 32 Q24 40 34 38 Q44 34 44 24 Q44 14 34 10Z" stroke="currentColor" stroke-width="1.4" fill="none" opacity=".6"/></svg>'},
-    {mode:'friend',   name:'Friend',    sub:'support & talk',icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B8A94" stroke-width="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'},
-    {mode:'therapist',name:'Therapist', sub:'CBT & reflection',icon:'<svg width="14" height="14" viewBox="0 0 52 52" fill="none"><circle cx="26" cy="26" r="14" stroke="currentColor" stroke-width="1" fill="none" opacity=".4"/><circle cx="26" cy="26" r="9" stroke="currentColor" stroke-width="1.1" fill="none" opacity=".7"/><circle cx="26" cy="26" r="4" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>'},
-    {mode:'mentor',   name:'Mentor',    sub:'goals & action', icon:'<svg width="14" height="14" viewBox="0 0 52 52" fill="none"><circle cx="26" cy="26" r="13" stroke="currentColor" stroke-width="1" fill="none" opacity=".35"/><line x1="26" y1="13" x2="26" y2="39" stroke="currentColor" stroke-width="1.2"/><line x1="13" y1="26" x2="39" y2="26" stroke="currentColor" stroke-width="1.2"/></svg>'}
-  ];
+    updateHead: function(){
+      const NAMES = {claro:'Claro',friend:'Friend',therapist:'Therapist',mentor:'Mentor'};
+      const SUBS  = {claro:'mindfulness',friend:'support & talk',therapist:'CBT & reflection',mentor:'goals & action'};
+      const cur = typeof mode !== 'undefined' ? mode : 'claro';
+      const nameEl = document.getElementById('webHeadName');
+      const moodEl = document.getElementById('webHeadMood');
+      const avEl   = document.getElementById('webAv');
+      if(nameEl) nameEl.textContent = NAMES[cur] || 'Claro';
+      if(avEl)   avEl.textContent   = (NAMES[cur]||'C')[0];
+      // Update sidebar active state
+      document.querySelectorAll('.web-ci').forEach(function(el){
+        const isOn = el.dataset.mode === cur;
+        el.classList.toggle('on', isOn);
+        const dot = el.querySelector('.web-ci-dot');
+        if(dot) dot.style.opacity = isOn ? '1' : '0';
+      });
+    },
 
-  const compsEl = document.getElementById('webComps');
-  if(compsEl){
-    MODES_WEB.forEach(function(m){
-      const div = document.createElement('div');
-      div.className = 'web-ci' + (m.mode === (typeof mode !== 'undefined' ? mode : 'claro') ? ' on' : '');
-      div.dataset.mode = m.mode;
-      div.innerHTML = `
-        <div class="web-ci-icon">${m.icon}</div>
-        <div class="web-ci-text">
-          <div class="web-ci-name">${m.name}</div>
-          <div class="web-ci-sub">${m.sub}</div>
-        </div>
-        <div class="web-ci-dot" style="display:${m.mode === (typeof mode !== 'undefined' ? mode : 'claro') ? 'block' : 'none'}"></div>`;
-      div.onclick = function(){
-        // Switch companion
-        document.querySelectorAll('.web-ci').forEach(function(x){ x.classList.remove('on'); x.querySelector('.web-ci-dot').style.display='none'; });
-        div.classList.add('on');
-        div.querySelector('.web-ci-dot').style.display='block';
-        // Call existing selP or pick via wb cards
-        if(typeof selP === 'function'){
-          const modeEls = document.querySelectorAll('[data-mode]');
-          modeEls.forEach(function(el){ if(el.dataset.mode === m.mode) el.click(); });
-        }
-        webUpdateHead();
-      };
-      compsEl.appendChild(div);
-    });
-  }
+    updateUser: function(){
+      const name   = localStorage.getItem('claro_name') || '';
+      const isPro  = localStorage.getItem('claro_plan') === 'pro';
+      const nameEl = document.getElementById('webUserName');
+      const proTag = document.getElementById('webProTag');
+      const avEl   = document.getElementById('webAv');
+      if(nameEl) nameEl.textContent = name || 'You';
+      if(proTag) proTag.style.display = isPro ? 'inline' : 'none';
+      if(avEl && name) avEl.textContent = name[0].toUpperCase();
+    },
 
-  function webUpdateHead(){
-    const currentMode = typeof mode !== 'undefined' ? mode : 'claro';
-    const info = MODES_WEB.find(function(m){ return m.mode === currentMode; });
-    const nameEl = document.getElementById('webHeadName');
-    if(nameEl && info) nameEl.textContent = info.name;
-    // Update avatar
-    const avEl = document.getElementById('webAv');
-    if(avEl && info) avEl.textContent = info.name[0];
-  }
+    toggleSB: function(){
+      WEB.sbOpen = !WEB.sbOpen;
+      const sb = document.getElementById('webSb');
+      if(!sb) return;
+      sb.classList.toggle('collapsed', !WEB.sbOpen);
+    },
 
-  // Update user info from localStorage
-  function webUpdateUser(){
-    const name = localStorage.getItem('claro_name') || '';
-    const userPlan = localStorage.getItem('claro_plan') || 'free';
-    const nameEl = document.getElementById('webUserName');
-    const proTag = document.getElementById('webProTag');
-    if(nameEl){
-      nameEl.firstChild.textContent = name || 'You';
-      if(name) nameEl.firstChild.textContent = name + ' ';
+    toggleFocus: function(){
+      WEB.focusOn = !WEB.focusOn;
+      const msgs = document.getElementById('msgs');
+      if(msgs) msgs.classList.toggle('focus-mode', WEB.focusOn);
+      const btn = document.getElementById('webFocusBtn');
+      if(btn) btn.classList.toggle('on', WEB.focusOn);
+      if(WEB.focusOn && WEB.sbOpen) WEB.toggleSB();
+      WEB.toast(WEB.focusOn ? '✦ Focus mode on' : 'Focus mode off');
+    },
+
+    newChat: function(){
+      if(typeof newChat === 'function') newChat();
+      else if(typeof wbStartWith === 'function') wbStartWith(typeof mode !== 'undefined' ? mode : 'claro');
+    },
+
+    export: function(){
+      const msgs = document.getElementById('msgs');
+      if(!msgs){ WEB.toast('No messages yet'); return; }
+      const lines = [];
+      msgs.querySelectorAll('.msg').forEach(function(el){
+        const isUser = el.classList.contains('usr');
+        const NAMES = {claro:'Claro',friend:'Friend',therapist:'Therapist',mentor:'Mentor'};
+        const sender = isUser ? 'You' : (NAMES[typeof mode !== 'undefined' ? mode : 'claro'] || 'Claro');
+        const textEl = el.querySelector('.mt,.msg-text,.mbub');
+        const text = textEl ? textEl.textContent.trim() : el.textContent.trim();
+        if(text) lines.push(sender + ': ' + text);
+      });
+      if(!lines.length){ WEB.toast('No messages to export'); return; }
+      const NAMES = {claro:'Claro',friend:'Friend',therapist:'Therapist',mentor:'Mentor'};
+      const blob = new Blob(['# Claro — ' + (NAMES[typeof mode !== 'undefined' ? mode : 'claro']||'Claro') + '\n' + new Date().toLocaleDateString() + '\n\n' + lines.join('\n\n')], {type:'text/plain'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = 'claro-journal-' + Date.now() + '.txt'; a.click();
+      WEB.toast('Journal exported ↓');
+    },
+
+    breathing: function(){
+      const inp = document.getElementById('userInput');
+      if(inp){
+        inp.value = "Let's do a 4-7-8 breathing exercise";
+        inp.dispatchEvent(new Event('input'));
+        const btn = document.querySelector('.send');
+        if(btn) btn.click();
+      }
+    },
+
+    toast: function(msg){
+      var t = document.getElementById('webToast');
+      if(!t){
+        t = document.createElement('div'); t.id = 'webToast';
+        t.style.cssText = 'position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--tx);color:var(--sf);padding:.6rem 1.25rem;border-radius:50px;font-size:13px;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;font-family:DM Sans,sans-serif;';
+        document.body.appendChild(t);
+      }
+      t.textContent = msg; t.style.opacity = '1';
+      clearTimeout(t._t); t._t = setTimeout(function(){ t.style.opacity='0'; }, 2000);
+    },
+
+    bindKeys: function(){
+      document.addEventListener('keydown', function(e){
+        if(!(e.metaKey||e.ctrlKey)) return;
+        const comps = document.querySelectorAll('.web-ci');
+        if(e.key==='k'){ e.preventDefault(); WEB.newChat(); }
+        if(e.key==='i'){ e.preventDefault(); WEB.toggleFocus(); }
+        if(e.key==='1'&&comps[0]){ e.preventDefault(); comps[0].click(); }
+        if(e.key==='2'&&comps[1]){ e.preventDefault(); comps[1].click(); }
+        if(e.key==='3'&&comps[2]){ e.preventDefault(); comps[2].click(); }
+        if(e.key==='4'&&comps[3]){ e.preventDefault(); comps[3].click(); }
+      });
     }
-    if(proTag) proTag.style.display = userPlan === 'pro' ? 'inline' : 'none';
+  };
+
+  // Expose to global scope for HTML onclick handlers
+  window.webToggleSB   = function(){ WEB.toggleSB(); };
+  window.webToggleFocus= function(){ WEB.toggleFocus(); };
+  window.webNewChat    = function(){ WEB.newChat(); };
+  window.webExportChat = function(){ WEB.export(); };
+  window.webStartBreathing = function(){ WEB.breathing(); };
+
+  // Wait for DOM + app JS to init, then run
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(function(){ WEB.init(); }, 100); });
+  } else {
+    setTimeout(function(){ WEB.init(); }, 100);
   }
-  webUpdateUser();
-  setInterval(webUpdateUser, 2000);
-
-  // Sidebar toggle
-  window.webToggleSB = function(){
-    document.getElementById('webSb').classList.toggle('collapsed');
-  };
-
-  // Focus mode
-  var focusOn = false;
-  window.webToggleFocus = function(){
-    focusOn = !focusOn;
-    const msgs = document.getElementById('msgs');
-    if(msgs) msgs.classList.toggle('focus-mode', focusOn);
-    const btn = document.getElementById('webFocusBtn');
-    if(btn) btn.classList.toggle('on', focusOn);
-    webShowToast(focusOn ? 'Focus mode on' : 'Focus mode off');
-  };
-
-  // New chat
-  window.webNewChat = function(){
-    if(typeof newChat === 'function') newChat();
-  };
-
-  // Export
-  window.webExportChat = function(){
-    const msgs = document.getElementById('msgs');
-    if(!msgs) return;
-    const lines = [];
-    msgs.querySelectorAll('.msg').forEach(function(el){
-      const sender = el.classList.contains('usr') ? 'You' : (typeof mode !== 'undefined' ? mode : 'Claro');
-      const text = el.querySelector('.mt')?.textContent || el.textContent;
-      lines.push(sender + ': ' + text.trim());
-    });
-    if(!lines.length){ webShowToast('No messages to export yet'); return; }
-    const blob = new Blob(['# Claro Journal\n' + new Date().toLocaleDateString() + '\n\n' + lines.join('\n\n')], {type:'text/plain'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'claro-' + Date.now() + '.txt';
-    a.click();
-    webShowToast('Journal exported');
-  };
-
-  // 4-7-8 breathing
-  window.webStartBreathing = function(){
-    // Send breathing prompt to chat
-    const inp = document.getElementById('userInput');
-    if(inp){
-      inp.value = 'Let\'s do a 4-7-8 breathing exercise together';
-      const sendBtn = document.getElementById('sendBtn') || document.querySelector('.send');
-      if(sendBtn) sendBtn.click();
-      else if(typeof sendMsg === 'function') sendMsg();
-    }
-  };
-
-  // Toast
-  function webShowToast(msg){
-    let t = document.getElementById('webToast');
-    if(!t){
-      t = document.createElement('div');
-      t.id = 'webToast';
-      t.style.cssText = 'position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--tx);color:var(--sf);padding:.6rem 1.25rem;border-radius:50px;font-size:13px;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;';
-      document.body.appendChild(t);
-    }
-    t.textContent = msg;
-    t.style.opacity = '1';
-    clearTimeout(t._timer);
-    t._timer = setTimeout(function(){ t.style.opacity = '0'; }, 2000);
-  }
-
-  // Keyboard shortcuts
-  document.addEventListener('keydown', function(e){
-    if(e.metaKey || e.ctrlKey){
-      if(e.key === 'k'){ e.preventDefault(); webNewChat(); }
-      if(e.key === '1'){ e.preventDefault(); compsEl?.children[0]?.click(); }
-      if(e.key === '2'){ e.preventDefault(); compsEl?.children[1]?.click(); }
-      if(e.key === '3'){ e.preventDefault(); compsEl?.children[2]?.click(); }
-      if(e.key === '4'){ e.preventDefault(); compsEl?.children[3]?.click(); }
-    }
-  });
-
-  // Update head on mode change (poll)
-  setInterval(webUpdateHead, 1000);
-  webUpdateHead();
 
 })();
+
 
 // ═══ INIT ═══
 (function init(){
@@ -2993,11 +3026,9 @@ async function syncProToServer(){
   const params=new URLSearchParams(window.location.search);
   const isUpgraded = params.get('upgraded')==='true' || params.get('pro')==='1';
   if(isUpgraded){
-    // Activate Pro immediately
     plan='pro';
     localStorage.setItem('claro_plan','pro');
     history.replaceState(null,'',window.location.pathname);
-    // Sync Pro to server so admin can see it
     syncProToServer();
   }
 
