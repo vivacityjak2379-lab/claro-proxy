@@ -281,7 +281,7 @@ kbd{background:var(--s2);border:1px solid var(--bd);border-radius:4px;padding:1p
             <line x1="11.5" y1="2.5" x2="2.5" y2="11.5" stroke="#5B8A94" stroke-width=".7"/>
           </svg>
         </a>
-        <div class="ea-badge">Early Access</div>
+        <div class="ea-badge" id="lbl-ea">Early Access</div>
       </div>
       <button class="toggle" onclick="toggleSB()" aria-label="Toggle sidebar">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -290,35 +290,35 @@ kbd{background:var(--s2);border:1px solid var(--bd);border-radius:4px;padding:1p
       </button>
     </div>
 
-    <div class="slabel">Companions</div>
+    <div class="slabel" id="lbl-companions">Companions</div>
     <div class="companions" id="compList"></div>
 
     <div style="height:1px;background:var(--bd);margin:4px 14px;flex-shrink:0;"></div>
 
-    <div class="slabel">Web features</div>
+    <div class="slabel" id="lbl-webfeatures">Web features</div>
     <div class="companions">
       <div class="ci" onclick="toggleFocus()">
         <div class="ciicon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8" opacity=".4"/></svg></div>
-        <div class="citext"><div class="ciname" id="focusLabel">Focus mode</div><div class="cisub">minimal view</div></div>
+        <div class="citext"><div class="ciname" id="lbl-focus">Focus mode</div><div class="cisub" id="lbl-focus-sub">minimal view</div></div>
         <div class="webbadge">web</div>
       </div>
       <div class="ci" onclick="toggleRP()">
         <div class="ciicon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
-        <div class="citext"><div class="ciname">Insights</div><div class="cisub">mood & patterns</div></div>
+        <div class="citext"><div class="ciname" id="lbl-insights">Insights</div><div class="cisub" id="lbl-insights-sub">mood & patterns</div></div>
         <div class="webbadge" id="insightsBadge">✦</div>
       </div>
       <div class="ci" onclick="exportChat()">
         <div class="ciicon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-        <div class="citext"><div class="ciname">Export journal</div><div class="cisub">save as text</div></div>
+        <div class="citext"><div class="ciname" id="lbl-export">Export journal</div><div class="cisub" id="lbl-export-sub">save as text</div></div>
         <div class="webbadge new">new</div>
       </div>
       <div class="ci" onclick="startBreathing()">
         <div class="ciicon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg></div>
-        <div class="citext"><div class="ciname">4·7·8 breathing</div><div class="cisub">quick exercise</div></div>
+        <div class="citext"><div class="ciname" id="lbl-breath">4·7·8 breathing</div><div class="cisub" id="lbl-breath-sub">quick exercise</div></div>
       </div>
       <div class="ci" onclick="goUpgrade()">
         <div class="ciicon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg></div>
-        <div class="citext"><div class="ciname" id="upgradeLabel">Upgrade to Pro</div><div class="cisub" id="upgradeSub">$9.99 / month</div></div>
+        <div class="citext"><div class="ciname" id="lbl-upgrade">Upgrade to Pro</div><div class="cisub" id="lbl-upgrade-sub">$9.99 / month</div></div>
         <div class="webbadge" style="background:var(--gl);color:var(--gd);">✦</div>
       </div>
     </div>
@@ -352,7 +352,7 @@ kbd{background:var(--s2);border:1px solid var(--bd);border-radius:4px;padding:1p
         <div class="hmood" id="headMood">· speak freely</div>
       </div>
       <div class="head-r">
-        <button class="hbtn" onclick="newChat()">New chat</button>
+        <button class="hbtn" id="btn-newchat" onclick="newChat()">New chat</button>
         <button class="hbtn" id="focusBtn" onclick="toggleFocus()">Focus</button>
         <button class="hbtn" id="rpBtn" onclick="toggleRP()">Insights ✦</button>
         <a href="/" class="hbtn">← Home</a>
@@ -439,6 +439,10 @@ kbd{background:var(--s2);border:1px solid var(--bd);border-radius:4px;padding:1p
 </div>
 
 <div id="toast"></div>
+
+<!-- ONBOARDING OVERLAY -->
+<div id="onboardingOverlay" style="position:fixed;inset:0;z-index:9997;background:var(--sf);display:none;align-items:center;justify-content:center;">
+</div>
 
 <script>
 // ═══ CONFIG ═══
@@ -678,7 +682,7 @@ function addMsg(role, text){
     '<div class="mav'+(isYou?' you':'')+'">'+ avText+'</div>'+
     '<div class="mbub-wrap">'+
       '<div class="mbub '+(isYou?'you':'ai')+'">'+text.replace(/\n/g,'<br>')+'</div>'+
-      '<div class="mtime'+(isYou?' r':'')+'">just now</div>'+
+      '<div class="mtime'+(isYou?' r':'')+'">'+t('justNow')+'</div>'+
     '</div>';
   wrap.appendChild(div);
   wrap.scrollTop = wrap.scrollHeight;
@@ -689,7 +693,7 @@ function showTyping(){
   const m = MODES.find(function(x){ return x.mode===mode; }) || MODES[0];
   const div = document.createElement('div');
   div.className = 'mrow'; div.id = 'typdiv';
-  div.innerHTML = '<div class="mav">'+m.av+'</div><div class="mbub-wrap"><div class="mbub ai"><div class="typing"><span></span><span></span><span></span></div></div></div>';
+  div.innerHTML = '<div class="mav">'+m.av+'</div><div class="mbub-wrap"><div class="mbub ai" style="min-width:52px;"><div class="typing"><span></span><span></span><span></span></div></div></div>';
   wrap.appendChild(div);
   wrap.scrollTop = wrap.scrollHeight;
 }
@@ -702,14 +706,35 @@ function removeTyping(){
 function newChat(){
   messages = [];
   const wrap = document.getElementById('msgs');
-  wrap.innerHTML = '<div class="datediv">Today</div>';
+  wrap.innerHTML = '<div class="datediv">'+t('today')+'</div>';
   const GREETINGS = {
-    claro:["Take a breath. What are you noticing right now?","Welcome. How are you arriving today?"],
-    friend:["Hey. What's going on?","Hi — how are you actually doing today?"],
-    therapist:["What would you like to work through today?","What has been on your mind lately?"],
-    mentor:["What are you working toward right now?","What is the one thing you most want to move forward on?"]
+    en:{
+      claro:["Take a breath. What are you noticing right now?","Welcome. How are you arriving today?"],
+      friend:["Hey. What is going on?","Hi — how are you actually doing today?"],
+      therapist:["What would you like to work through today?","What has been on your mind lately?"],
+      mentor:["What are you working toward right now?","What is the one thing you most want to move forward on?"]
+    },
+    ru:{
+      claro:["Сделай вдох. Что ты замечаешь прямо сейчас?","Привет. Как ты сегодня приходишь?"],
+      friend:["Привет. Что происходит?","Как ты на самом деле сегодня?"],
+      therapist:["Над чем хочешь поработать сегодня?","Что у тебя в голове в последнее время?"],
+      mentor:["К чему ты стремишься прямо сейчас?","Что важнее всего сдвинуть с места сегодня?"]
+    },
+    es:{
+      claro:["Respira. ¿Qué notas en este momento?","Bienvenido. ¿Cómo llegas hoy?"],
+      friend:["Hola. ¿Qué pasa?","¿Cómo estás realmente hoy?"],
+      therapist:["¿Qué te gustaría trabajar hoy?","¿Qué ha estado en tu mente últimamente?"],
+      mentor:["¿Hacia dónde te diriges ahora?","¿Qué es lo más importante que quieres avanzar?"]
+    },
+    fr:{
+      claro:["Respire. Qu est-ce que tu remarques maintenant?","Bienvenue. Comment arrives-tu aujourd hui?"],
+      friend:["Salut. Comment ca va?","Comment tu vas vraiment aujourd hui?"],
+      therapist:["Sur quoi aimerais-tu travailler aujourd hui?","Qu est-ce qui t occupe l esprit ces derniers temps?"],
+      mentor:["Vers quoi tu te diriges en ce moment?","Quelle est la chose la plus importante que tu veux faire avancer?"]
+    }
   };
-  const greets = GREETINGS[mode] || GREETINGS.claro;
+  const langGreets = GREETINGS[lang] || GREETINGS.en;
+  const greets = langGreets[mode] || langGreets.claro;
   const greeting = greets[Math.floor(Math.random()*greets.length)];
   addMsg('ai', greeting);
   messages.push({role:'assistant',content:greeting});
@@ -1101,14 +1126,105 @@ function startBreathing(){
   next();
 }
 
+// ═══ TRANSLATIONS ═══
+const T = {
+  en:{
+    newChat:'New chat', focus:'Focus', insights:'Insights ✦', home:'← Home',
+    speakFreely:'speak freely', whatsOnMind:"What's on your mind?",
+    companions:'Companions', webFeatures:'Web features',
+    focusMode:'Focus mode', minimalView:'minimal view',
+    insightsLabel:'Insights', moodPatterns:'mood & patterns',
+    exportJournal:'Export journal', saveAsText:'save as text',
+    breathing:'4·7·8 breathing', quickExercise:'quick exercise',
+    upgradePro:'Upgrade to Pro', priceMonth:'$9.99 / month',
+    proActive:'Pro active ✦',
+    moodTitle:'Mood right now', weeklyPatterns:'Weekly patterns',
+    quickTools:'Quick exercises',
+    settingsTitle:'Settings', yourName:'Your name', namePlaceholder:'How should Claro call you?',
+    languageLabel:'Language', saveBtn:'Save', resetBtn:'Reset & start over',
+    today:'Today', justNow:'just now',
+    enterSend:'send', newChatShort:'new chat', switchShort:'switch',
+    earlyAccess:'Early Access'
+  },
+  ru:{
+    newChat:'Новый чат', focus:'Фокус', insights:'Инсайты ✦', home:'← Главная',
+    speakFreely:'говори свободно', whatsOnMind:'Что у тебя на уме?',
+    companions:'Компаньоны', webFeatures:'Веб функции',
+    focusMode:'Режим фокуса', minimalView:'минимальный вид',
+    insightsLabel:'Инсайты', moodPatterns:'настроение и паттерны',
+    exportJournal:'Экспорт дневника', saveAsText:'сохранить как текст',
+    breathing:'Дыхание 4·7·8', quickExercise:'быстрое упражнение',
+    upgradePro:'Перейти на Pro', priceMonth:'$9.99 / месяц',
+    proActive:'Pro активен ✦',
+    moodTitle:'Настроение сейчас', weeklyPatterns:'Паттерны недели',
+    quickTools:'Упражнения',
+    settingsTitle:'Настройки', yourName:'Твоё имя', namePlaceholder:'Как тебя называть?',
+    languageLabel:'Язык', saveBtn:'Сохранить', resetBtn:'Сбросить всё',
+    today:'Сегодня', justNow:'только что',
+    enterSend:'отправить', newChatShort:'новый чат', switchShort:'переключить',
+    earlyAccess:'Ранний доступ'
+  },
+  es:{
+    newChat:'Nuevo chat', focus:'Enfoque', insights:'Perspectivas ✦', home:'← Inicio',
+    speakFreely:'habla libremente', whatsOnMind:'¿Qué tienes en mente?',
+    companions:'Compañeros', webFeatures:'Funciones web',
+    focusMode:'Modo enfoque', minimalView:'vista mínima',
+    insightsLabel:'Perspectivas', moodPatterns:'estado de ánimo',
+    exportJournal:'Exportar diario', saveAsText:'guardar como texto',
+    breathing:'Respiración 4·7·8', quickExercise:'ejercicio rápido',
+    upgradePro:'Mejorar a Pro', priceMonth:'$9.99 / mes',
+    proActive:'Pro activo ✦',
+    moodTitle:'Estado de ánimo', weeklyPatterns:'Patrones semanales',
+    quickTools:'Ejercicios',
+    settingsTitle:'Ajustes', yourName:'Tu nombre', namePlaceholder:'¿Cómo llamarte?',
+    languageLabel:'Idioma', saveBtn:'Guardar', resetBtn:'Reiniciar todo',
+    today:'Hoy', justNow:'ahora mismo',
+    enterSend:'enviar', newChatShort:'nuevo chat', switchShort:'cambiar',
+    earlyAccess:'Acceso anticipado'
+  },
+  fr:{
+    newChat:'Nouveau chat', focus:'Focus', insights:'Insights ✦', home:'← Accueil',
+    speakFreely:'parle librement', whatsOnMind:'À quoi penses-tu?',
+    companions:'Compagnons', webFeatures:'Fonctions web',
+    focusMode:'Mode focus', minimalView:'vue minimale',
+    insightsLabel:'Insights', moodPatterns:'humeur et tendances',
+    exportJournal:'Exporter journal', saveAsText:'sauvegarder en texte',
+    breathing:'Respiration 4·7·8', quickExercise:'exercice rapide',
+    upgradePro:'Passer à Pro', priceMonth:'9,99$ / mois',
+    proActive:'Pro actif ✦',
+    moodTitle:'Humeur actuelle', weeklyPatterns:'Tendances de la semaine',
+    quickTools:'Exercices',
+    settingsTitle:'Paramètres', yourName:'Ton prénom', namePlaceholder:"Comment t'appeler?",
+    languageLabel:'Langue', saveBtn:'Sauvegarder', resetBtn:'Tout réinitialiser',
+    today:"Aujourd hui", justNow:'a l instant',
+    enterSend:'envoyer', newChatShort:'nouveau chat', switchShort:'changer',
+    earlyAccess:'Accès anticipé'
+  }
+};
+
+function t(key){ return (T[lang]||T.en)[key] || T.en[key] || key; }
+
 // ═══ LANGUAGE ═══
 function switchLang(newLang){
+  if(lang === newLang) return;
   lang = newLang;
   localStorage.setItem('claro_lang', lang);
   updateLangUI();
-  toast(newLang==='ru'?'Язык: Русский':newLang==='es'?'Idioma: Español':newLang==='fr'?'Langue: Français':'Language: English');
-  // Update chat greeting
-  newChat();
+  applyLangToUI();
+  // Smooth transition
+  const msgs = document.getElementById('msgs');
+  if(msgs){
+    msgs.style.opacity = '0';
+    msgs.style.transition = 'opacity .3s';
+    setTimeout(function(){
+      newChat();
+      msgs.style.opacity = '1';
+    }, 300);
+  } else {
+    newChat();
+  }
+  const toastMsgs = {en:'Language: English',ru:'Язык: Русский',es:'Idioma: Español',fr:'Langue: Français'};
+  toast(toastMsgs[newLang]||'Language changed');
 }
 
 function updateLangUI(){
@@ -1116,6 +1232,60 @@ function updateLangUI(){
     const el = document.getElementById('lp-'+l);
     if(el) el.classList.toggle('on', l===lang);
   });
+}
+
+function applyLangToUI(){
+  const tl = T[lang]||T.en;
+  // Head buttons
+  const btnMap = {
+    'btn-newchat': tl.newChat,
+    'btn-focus': tl.focus,
+    'btn-insights': tl.insights
+  };
+  Object.keys(btnMap).forEach(function(id){
+    const el = document.getElementById(id);
+    if(el) el.textContent = btnMap[id];
+  });
+  // Sidebar labels
+  const lblMap = {
+    'lbl-companions': tl.companions,
+    'lbl-webfeatures': tl.webFeatures,
+    'lbl-focus': tl.focusMode,
+    'lbl-focus-sub': tl.minimalView,
+    'lbl-insights': tl.insightsLabel,
+    'lbl-insights-sub': tl.moodPatterns,
+    'lbl-export': tl.exportJournal,
+    'lbl-export-sub': tl.saveAsText,
+    'lbl-breath': tl.breathing,
+    'lbl-breath-sub': tl.quickExercise,
+    'lbl-upgrade': tl.upgradePro,
+    'lbl-upgrade-sub': plan==='pro' ? tl.proActive : tl.priceMonth,
+    'lbl-ea': tl.earlyAccess
+  };
+  Object.keys(lblMap).forEach(function(id){
+    const el = document.getElementById(id);
+    if(el) el.textContent = lblMap[id];
+  });
+  // Input placeholder
+  const inp = document.getElementById('inp');
+  if(inp) inp.placeholder = tl.whatsOnMind;
+  // Speak freely
+  const sf = document.querySelector('.speakfreely');
+  if(sf) sf.textContent = tl.speakFreely;
+  // KBD hints
+  const kbdEl = document.querySelector('.kbdrow');
+  if(kbdEl) kbdEl.innerHTML =
+    '<span><kbd>Enter</kbd> '+tl.enterSend+'</span>'+
+    '<span><kbd>⌘K</kbd> '+tl.newChatShort+'</span>'+
+    '<span><kbd>⌘1-4</kbd> '+tl.switchShort+'</span>';
+  // Insights panel
+  const moodTitle = document.querySelector('.rpsec .rptitle');
+  if(moodTitle) moodTitle.textContent = tl.moodTitle;
+  // Head mood default
+  if(!currentMood){
+    const hm = document.getElementById('headMood');
+    if(hm) hm.textContent = '· '+tl.speakFreely;
+  }
 }
 
 // ═══ THEME ═══
@@ -1180,6 +1350,7 @@ document.addEventListener('keydown',function(e){
   buildMoodGrid();
   updateUI();
   updateLangUI();
+  applyLangToUI();
 
   if(!checkOnboarding()){
     newChat();
