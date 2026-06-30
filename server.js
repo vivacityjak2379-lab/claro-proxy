@@ -1,43 +1,113 @@
 const express = require('express');
+const { Pool } = require('pg');
 const app = express();
 const PORT = process.env.PORT || 8080;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'claro-admin-2026';
 
-// Rate limiting
+// ─── DATABASE ────────────────────────────────────────────────────────────────
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('localhost')
+    ? { rejectUnauthorized: false }
+    : false,
+});
+
+async function initDB() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      uid                TEXT PRIMARY KEY,
+      plan               TEXT NOT NULL DEFAULT 'free',
+      email              TEXT NOT NULL DEFAULT '',
+      stripe_customer_id TEXT,
+      subscription_id    TEXT,
+      activated_at       TIMESTAMPTZ,
+      created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  console.log('✓ DB ready');
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+
+async function getUser(uid) {
+  const { rows } = await pool.query('SELECT * FROM users WHERE uid = $1', [uid]);
+  return rows[0] || null;
+}
+
+async function upsertUser(uid, fields) {
+  const cols = Object.keys(fields);
+  if (cols.length === 0) return;
+
+  // Build: INSERT ... ON CONFLICT (uid) DO UPDATE SET ...
+  const setClauses = cols.map((c, i) => `${c} = $${i + 2}`).join(', ');
+  const values = [uid, ...cols.map(c => fields[c])];
+
+  await pool.query(
+    `INSERT INTO users (uid, ${cols.join(', ')}, updated_at)
+     VALUES ($1, ${cols.map((_, i) => `$${i + 2}`).join(', ')}, NOW())
+     ON CONFLICT (uid) DO UPDATE SET ${setClauses}, updated_at = NOW()`,
+    values
+  );
+}
+
+// ─── RATE LIMITING (in-memory, per-IP, resets on restart — acceptable) ───────
+
 const rateLimit = {};
-const RATE_WINDOW = 60 * 60 * 1000; // 1 hour
-const RATE_MAX = 50;
+const RATE_WINDOW = 60 * 60 * 1000;
+const RATE_MAX_FREE = 50;
+const RATE_MAX_PRO  = 500;
 
-// In-memory user store (for MVP — replace with DB later)
-const users = {}; // { uid: { plan, email, stripeCustomerId, createdAt } }
+// ─── CORS ────────────────────────────────────────────────────────────────────
 
-// CORS
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, anthropic-version, x-api-key, x-admin-password');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, anthropic-version, x-api-key, x-admin-password, x-uid');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   if (req.method === 'OPTIONS') return res.sendStatus(200);
   next();
 });
 
-// Raw body for Stripe webhook
+// Raw body for Stripe webhook must come before express.json()
 app.use('/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 
-// ─── PROXY ───
+// ─── PROXY ───────────────────────────────────────────────────────────────────
+// The frontend sends x-uid header so we can verify plan server-side.
+// Free users are limited to RATE_MAX_FREE req/hr; Pro users get RATE_MAX_PRO.
+// This closes the localStorage plan-spoofing vulnerability.
+
 app.post('/v1/messages', async (req, res) => {
-  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  const ip  = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  const uid = req.headers['x-uid'] || null;
   const now = Date.now();
 
+  // Resolve plan from DB (falls back to 'free' if uid unknown or DB error)
+  let userPlan = 'free';
+  if (uid) {
+    try {
+      const user = await getUser(uid);
+      if (user) userPlan = user.plan;
+    } catch (e) {
+      console.error('DB plan check failed:', e.message);
+    }
+  }
+
+  const rateMax = userPlan === 'pro' ? RATE_MAX_PRO : RATE_MAX_FREE;
+
+  // Rate limit keyed by IP
   if (!rateLimit[ip]) rateLimit[ip] = { count: 0, resetAt: now + RATE_WINDOW };
-  if (now > rateLimit[ip].resetAt) { rateLimit[ip] = { count: 0, resetAt: now + RATE_WINDOW }; }
+  if (now > rateLimit[ip].resetAt) rateLimit[ip] = { count: 0, resetAt: now + RATE_WINDOW };
   rateLimit[ip].count++;
 
-  if (rateLimit[ip].count > RATE_MAX) {
-    return res.status(429).json({ error: { message: 'Rate limit exceeded. Try again in 1 hour.' } });
+  if (rateLimit[ip].count > rateMax) {
+    return res.status(429).json({
+      error: { message: 'Rate limit exceeded. Try again in 1 hour.' }
+    });
   }
 
   try {
@@ -46,9 +116,9 @@ app.post('/v1/messages', async (req, res) => {
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
+        'anthropic-version': '2023-06-01',
       },
-      body: JSON.stringify(req.body)
+      body: JSON.stringify(req.body),
     });
     const data = await response.json();
     res.status(response.status).json(data);
@@ -57,7 +127,8 @@ app.post('/v1/messages', async (req, res) => {
   }
 });
 
-// ─── STRIPE WEBHOOK ───
+// ─── STRIPE WEBHOOK ──────────────────────────────────────────────────────────
+
 app.post('/webhook', async (req, res) => {
   let event;
   try {
@@ -75,115 +146,171 @@ app.post('/webhook', async (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // Handle events
-  if (event.type === 'checkout.session.completed' || 
-      event.type === 'customer.subscription.created') {
-    const session = event.data.object;
-    const uid = session.metadata?.uid || session.client_reference_id;
-    const email = session.customer_email || session.customer_details?.email;
-    
-    if (uid) {
-      users[uid] = {
-        plan: 'pro',
-        email: email || '',
-        stripeCustomerId: session.customer,
-        subscriptionId: session.subscription,
-        activatedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      console.log(`✓ Pro activated for uid: ${uid}`);
-    }
-  }
+  try {
+    if (event.type === 'checkout.session.completed' ||
+        event.type === 'customer.subscription.created') {
+      const session = event.data.object;
+      const uid     = session.metadata?.uid || session.client_reference_id;
+      const email   = session.customer_email || session.customer_details?.email || '';
 
-  if (event.type === 'customer.subscription.deleted' ||
-      event.type === 'invoice.payment_failed') {
-    const subscription = event.data.object;
-    // Find user by stripeCustomerId
-    const uid = Object.keys(users).find(
-      k => users[k].stripeCustomerId === subscription.customer
-    );
-    if (uid) {
-      users[uid].plan = 'free';
-      users[uid].updatedAt = new Date().toISOString();
-      console.log(`✓ Pro cancelled for uid: ${uid}`);
+      if (uid) {
+        await upsertUser(uid, {
+          plan:               'pro',
+          email,
+          stripe_customer_id: session.customer,
+          subscription_id:    session.subscription,
+          activated_at:       new Date().toISOString(),
+        });
+        console.log(`✓ Pro activated for uid: ${uid}`);
+      }
     }
+
+    if (event.type === 'customer.subscription.deleted' ||
+        event.type === 'invoice.payment_failed') {
+      const subscription = event.data.object;
+      const { rows } = await pool.query(
+        'SELECT uid FROM users WHERE stripe_customer_id = $1',
+        [subscription.customer]
+      );
+      if (rows.length > 0) {
+        const uid = rows[0].uid;
+        await pool.query(
+          "UPDATE users SET plan = 'free', updated_at = NOW() WHERE uid = $1",
+          [uid]
+        );
+        console.log(`✓ Pro cancelled for uid: ${uid}`);
+      }
+    }
+  } catch (err) {
+    console.error('Webhook DB error:', err.message);
   }
 
   res.json({ received: true });
 });
 
-// ─── CHECK PLAN (called from app) ───
-app.get('/check-plan/:uid', (req, res) => {
-  const { uid } = req.params;
-  const user = users[uid];
-  if (user) {
-    res.json({ plan: user.plan, email: user.email });
-  } else {
-    res.json({ plan: 'free' });
+// ─── CHECK PLAN ──────────────────────────────────────────────────────────────
+
+app.get('/check-plan/:uid', async (req, res) => {
+  try {
+    const user = await getUser(req.params.uid);
+    if (user) {
+      res.json({ plan: user.plan, email: user.email });
+    } else {
+      res.json({ plan: 'free' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
-// ─── REGISTER USER ───
-app.post('/register', (req, res) => {
+// ─── REGISTER USER ───────────────────────────────────────────────────────────
+
+app.post('/register', async (req, res) => {
   const { uid, email, plan } = req.body;
   if (!uid) return res.status(400).json({ error: 'uid required' });
-  if (!users[uid]) {
-    users[uid] = {
-      plan: plan || 'free',
-      email: email || '',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-  } else {
-    if (email && !users[uid].email) users[uid].email = email;
-    if (plan === 'pro') {
-      users[uid].plan = 'pro';
-      users[uid].updatedAt = new Date().toISOString();
-      console.log('Pro synced via register for uid:', uid);
+
+  try {
+    const existing = await getUser(uid);
+
+    if (!existing) {
+      await pool.query(
+        'INSERT INTO users (uid, plan, email) VALUES ($1, $2, $3)',
+        [uid, plan || 'free', email || '']
+      );
+    } else {
+      // Only upgrade plan via this endpoint, never downgrade
+      const updates = {};
+      if (email && !existing.email) updates.email = email;
+      if (plan === 'pro' && existing.plan !== 'pro') {
+        updates.plan = 'pro';
+        updates.activated_at = new Date().toISOString();
+        console.log('Pro synced via /register for uid:', uid);
+      }
+      if (Object.keys(updates).length > 0) {
+        await upsertUser(uid, updates);
+      }
     }
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('/register error:', err.message);
+    res.status(500).json({ error: err.message });
   }
-  res.json({ ok: true });
 });
 
-// ─── ADMIN API ───
+// ─── ADMIN ───────────────────────────────────────────────────────────────────
+
 function adminAuth(req, res, next) {
-  const auth = req.headers['x-admin-password'];
-  if (auth !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Unauthorized' });
+  if (req.headers['x-admin-password'] !== ADMIN_PASSWORD) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
   next();
 }
 
-// Get all users
-app.get('/admin/users', adminAuth, (req, res) => {
-  const list = Object.entries(users).map(([uid, data]) => ({ uid, ...data }));
-  res.json({ users: list, total: list.length });
+app.get('/admin/users', adminAuth, async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM users ORDER BY created_at DESC');
+    res.json({ users: rows, total: rows.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Get user by UID
-app.get('/admin/users/:uid', adminAuth, (req, res) => {
-  const user = users[req.params.uid];
-  if (!user) return res.status(404).json({ error: 'User not found' });
-  res.json({ uid: req.params.uid, ...user });
+app.get('/admin/users/:uid', adminAuth, async (req, res) => {
+  try {
+    const user = await getUser(req.params.uid);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Set plan manually
-app.post('/admin/users/:uid/plan', adminAuth, (req, res) => {
+app.post('/admin/users/:uid/plan', adminAuth, async (req, res) => {
   const { uid } = req.params;
   const { plan } = req.body;
-  if (!['free', 'pro'].includes(plan)) return res.status(400).json({ error: 'Invalid plan' });
-  if (!users[uid]) users[uid] = { plan, email: '', createdAt: new Date().toISOString() };
-  users[uid].plan = plan;
-  users[uid].updatedAt = new Date().toISOString();
-  console.log(`Admin: set ${uid} to ${plan}`);
-  res.json({ ok: true, uid, plan });
+  if (!['free', 'pro'].includes(plan)) {
+    return res.status(400).json({ error: 'Invalid plan' });
+  }
+  try {
+    await upsertUser(uid, { plan });
+    console.log(`Admin: set ${uid} to ${plan}`);
+    res.json({ ok: true, uid, plan });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Stats
-app.get('/admin/stats', adminAuth, (req, res) => {
-  const total = Object.keys(users).length;
-  const pro = Object.values(users).filter(u => u.plan === 'pro').length;
-  res.json({ total, pro, free: total - pro });
+app.get('/admin/stats', adminAuth, async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT
+        COUNT(*)                                    AS total,
+        COUNT(*) FILTER (WHERE plan = 'pro')        AS pro,
+        COUNT(*) FILTER (WHERE plan = 'free')       AS free
+      FROM users
+    `);
+    res.json({
+      total: Number(rows[0].total),
+      pro:   Number(rows[0].pro),
+      free:  Number(rows[0].free),
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-app.get('/', (req, res) => res.json({ status: 'Claro proxy running', version: '2.0' }));
+// ─── HEALTH ──────────────────────────────────────────────────────────────────
 
-app.listen(PORT, () => console.log(`Claro proxy running on port ${PORT}`));
+app.get('/', (req, res) => res.json({ status: 'Claro proxy running', version: '3.0' }));
+
+// ─── START ───────────────────────────────────────────────────────────────────
+
+initDB()
+  .then(() => {
+    app.listen(PORT, () => console.log(`Claro proxy running on port ${PORT}`));
+  })
+  .catch(err => {
+    console.error('Failed to init DB:', err.message);
+    process.exit(1);
+  });
