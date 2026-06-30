@@ -177,6 +177,31 @@ kbd{background:var(--s2);border:1px solid var(--bd);border-radius:4px;padding:1p
 .pro-closebtn{padding:.82rem 2.25rem;border-radius:50px;border:none;background:var(--tx);color:var(--sf);font-size:14px;font-family:'DM Sans',sans-serif;cursor:pointer;animation:fadeUp .5s ease .98s both;transition:opacity .18s;}
 .pro-closebtn:hover{opacity:.88;}
 
+/* ── WELCOME SCREEN ── */
+#welcomeScreen{position:fixed;inset:0;z-index:9998;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;padding:2.5rem 2rem;text-align:center;}
+#welcomeScreen.show{display:flex;}
+.welcome-star-wrap{position:relative;margin-bottom:1.75rem;animation:welcomeStarIn .8s cubic-bezier(.34,1.56,.64,1) .1s both;}
+@keyframes welcomeStarIn{0%{opacity:0;transform:scale(.3) rotate(-45deg);}100%{opacity:1;transform:scale(1) rotate(0deg);}}
+.welcome-glow{position:absolute;inset:-22px;border-radius:50%;background:radial-gradient(circle,rgba(196,149,106,.4) 0%,rgba(196,149,106,0) 70%);filter:blur(2px);animation:welcomeGlowPulse 2.6s ease-in-out 1s infinite;}
+@keyframes welcomeGlowPulse{0%,100%{opacity:.55;transform:scale(.92);}50%{opacity:1;transform:scale(1.1);}}
+.welcome-star{position:relative;}
+.welcome-star .ws-v,.welcome-star .ws-h,.welcome-star .ws-d1,.welcome-star .ws-d2{transform-box:fill-box;transform-origin:50% 50%;}
+.welcome-star .ws-v{animation:wsBreatheY 2.6s ease-in-out 1s infinite;}
+.welcome-star .ws-h{animation:wsBreatheX 2.6s ease-in-out 1s infinite;}
+.welcome-star .ws-d1{animation:wsBreatheS 2.6s ease-in-out 1.3s infinite;}
+.welcome-star .ws-d2{animation:wsBreatheS 2.6s ease-in-out 1.45s infinite;}
+@keyframes wsBreatheY{0%,100%{transform:scaleY(.82);}50%{transform:scaleY(1.12);}}
+@keyframes wsBreatheX{0%,100%{transform:scaleX(.82);}50%{transform:scaleX(1.12);}}
+@keyframes wsBreatheS{0%,100%{transform:scale(.85);}50%{transform:scale(1.1);}}
+.welcome-title{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:var(--tx);line-height:1.45;max-width:380px;margin-bottom:2rem;animation:fadeUp .5s ease .55s both;}
+.welcome-feats{display:flex;flex-direction:column;gap:10px;width:100%;max-width:340px;margin-bottom:2rem;}
+.welcome-feat{font-size:13px;color:var(--t2);text-align:left;padding:11px 14px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;line-height:1.5;}
+.welcome-feat:nth-child(1){animation:fadeUp .5s ease .7s both;}
+.welcome-feat:nth-child(2){animation:fadeUp .5s ease .8s both;}
+.welcome-feat:nth-child(3){animation:fadeUp .5s ease .9s both;}
+.welcome-closebtn{padding:.82rem 2.25rem;border-radius:50px;border:none;background:var(--tx);color:var(--sf);font-size:14px;font-family:'DM Sans',sans-serif;cursor:pointer;animation:fadeUp .5s ease 1.05s both;transition:opacity .18s,transform .15s;}
+.welcome-closebtn:hover{opacity:.88;transform:translateY(-1px);}
+
 /* ── ONBOARDING OVERLAY ── */
 #onboardingOverlay{position:fixed;inset:0;z-index:9997;background:var(--sf);display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;}
 #onboardingOverlay.done{display:none;}
@@ -343,6 +368,22 @@ kbd{background:var(--s2);border:1px solid var(--bd);border-radius:4px;padding:1p
     </div>
   </div>
   <button class="pro-closebtn" onclick="closePro()">Start talking →</button>
+</div>
+
+<!-- WELCOME SCREEN -->
+<div id="welcomeScreen">
+  <div class="welcome-star-wrap">
+    <div class="welcome-glow"></div>
+    <svg class="welcome-star" width="64" height="64" viewBox="0 0 14 14" fill="none">
+      <line class="ws-v" x1="7" y1="1" x2="7" y2="13" stroke="#5B8A94" stroke-width="1.4"/>
+      <line class="ws-h" x1="1" y1="7" x2="13" y2="7" stroke="#5B8A94" stroke-width="1.4"/>
+      <line class="ws-d1" x1="2.5" y1="2.5" x2="11.5" y2="11.5" stroke="#5B8A94" stroke-width=".8"/>
+      <line class="ws-d2" x1="11.5" y1="2.5" x2="2.5" y2="11.5" stroke="#5B8A94" stroke-width=".8"/>
+    </svg>
+  </div>
+  <div class="welcome-title" id="welcomeTitle"></div>
+  <div class="welcome-feats" id="welcomeFeats"></div>
+  <button class="welcome-closebtn" onclick="closeWelcomeScreen()" id="welcomeCloseBtn">Start talking →</button>
 </div>
 
 <!-- MAIN LAYOUT -->
@@ -1259,10 +1300,9 @@ function maybeShowAuthPrompt(cb){
   });
 }
 
-function closeAuthPrompt(){
+function hideAuthOverlay(cb){
   localStorage.setItem('claro_auth_prompted','1');
   const ov = document.getElementById('authOverlay');
-  const cb = _authResolve; _authResolve = null;
   if(!ov){ if(cb) cb(); return; }
   ov.style.transition = 'opacity .4s';
   ov.style.opacity = '0';
@@ -1270,6 +1310,89 @@ function closeAuthPrompt(){
     ov.style.display = 'none';
     ov.style.transition = '';
     if(cb) cb();
+  }, 400);
+}
+
+function closeAuthPrompt(){
+  const cb = _authResolve; _authResolve = null;
+  hideAuthOverlay(cb);
+}
+
+// ═══ WELCOME SCREEN ═══
+// Shown once, right after a successful sign-up (not on login or skip).
+const WELCOME_COPY = {
+  en:{
+    withName:'Welcome, {name}. This is your space to think clearly, feel understood, and move forward.',
+    noName:'Welcome. This is your space to think clearly, feel understood, and move forward.',
+    feats:[
+      '✦ Talk through anything — real conversation, not scripted replies',
+      '✦ Check in each morning — track your mood and energy',
+      '✦ Try gentle exercises — breathing, grounding, journaling'
+    ]
+  },
+  ru:{
+    withName:'Добро пожаловать, {name}. Это твоё пространство, чтобы мыслить ясно, чувствовать понимание и двигаться вперёд.',
+    noName:'Добро пожаловать. Это твоё пространство, чтобы мыслить ясно, чувствовать понимание и двигаться вперёд.',
+    feats:[
+      '✦ Говори о чём угодно — настоящий разговор, а не сценарий',
+      '✦ Делай утренний чек-ин — отслеживай настроение и энергию',
+      '✦ Пробуй мягкие практики — дыхание, заземление, дневник'
+    ]
+  },
+  es:{
+    withName:'Bienvenido, {name}. Este es tu espacio para pensar con claridad, sentirte comprendido y avanzar.',
+    noName:'Bienvenido. Este es tu espacio para pensar con claridad, sentirte comprendido y avanzar.',
+    feats:[
+      '✦ Habla de lo que sea — conversación real, no respuestas guionadas',
+      '✦ Haz tu check-in cada mañana — sigue tu ánimo y energía',
+      '✦ Prueba ejercicios suaves — respiración, conexión a tierra, diario'
+    ]
+  },
+  fr:{
+    withName:"Bienvenue, {name}. C'est ton espace pour penser clairement, te sentir compris et avancer.",
+    noName:"Bienvenue. C'est ton espace pour penser clairement, te sentir compris et avancer.",
+    feats:[
+      "✦ Parle de tout — une vraie conversation, pas des réponses scriptées",
+      "✦ Fais ton check-in chaque matin — suis ton humeur et ton énergie",
+      "✦ Essaie des exercices doux — respiration, ancrage, journal"
+    ]
+  }
+};
+
+function showWelcomeScreen(onDone){
+  const el = document.getElementById('welcomeScreen');
+  if(!el){ if(onDone) onDone(); return; }
+
+  const copy = WELCOME_COPY[lang] || WELCOME_COPY.en;
+  const name = (localStorage.getItem('claro_name') || userName || '').trim();
+  const title = name ? copy.withName.replace('{name}', name) : copy.noName;
+
+  document.getElementById('welcomeTitle').textContent = title;
+  const featsEl = document.getElementById('welcomeFeats');
+  featsEl.innerHTML = '';
+  copy.feats.forEach(function(f){
+    const d = document.createElement('div');
+    d.className = 'welcome-feat';
+    d.textContent = f;
+    featsEl.appendChild(d);
+  });
+
+  el._onDone = onDone;
+  el.classList.add('show');
+}
+
+function closeWelcomeScreen(){
+  const el = document.getElementById('welcomeScreen');
+  if(!el) return;
+  localStorage.setItem('claro_welcomed','1');
+  const done = el._onDone; el._onDone = null;
+  el.style.transition = 'opacity .4s ease';
+  el.style.opacity = '0';
+  setTimeout(function(){
+    el.classList.remove('show');
+    el.style.opacity = '';
+    el.style.transition = '';
+    if(done) done();
   }, 400);
 }
 
@@ -1303,7 +1426,14 @@ async function authSignup(){
     localStorage.setItem('claro_email', data.email);
     if(data.plan){ plan = data.plan; localStorage.setItem('claro_plan', data.plan); updateUI(); }
     toast('Account created');
-    closeAuthPrompt();
+    const proceed = _authResolve; _authResolve = null;
+    hideAuthOverlay(function(){
+      if(localStorage.getItem('claro_welcomed')){
+        if(proceed) proceed();
+      } else {
+        showWelcomeScreen(proceed);
+      }
+    });
   }catch(e){
     authSetLoading(false);
     errEl.textContent = 'Network error. Try again.';
