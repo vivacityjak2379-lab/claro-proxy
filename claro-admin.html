@@ -40,40 +40,24 @@ body{font-family:'DM Sans',sans-serif;background:#111214;color:#E8E5DF;min-heigh
 .search-input:focus{border-color:#3D6B74;}
 .search-btn{padding:.75rem 1.25rem;border-radius:10px;border:none;background:#5B8A94;color:#fff;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;}
 
-/* USER DETAIL */
-.user-detail{background:#17191C;border:1px solid #1E2226;border-radius:14px;padding:1.25rem;margin-bottom:1.25rem;display:none;}
-.ud-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem;}
-.ud-uid{font-size:12px;color:#44484F;font-family:monospace;margin-bottom:.25rem;}
-.ud-email{font-size:15px;color:#E8E5DF;font-weight:400;}
-.ud-badge{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:500;}
-.ud-badge.pro{background:#251A10;color:#C4956A;border:1px solid rgba(196,149,106,.3);}
-.ud-badge.free{background:#1E2226;color:#44484F;}
-.ud-fields{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1rem;}
-.ud-field{background:#111214;border-radius:8px;padding:.65rem .85rem;}
-.ud-field-l{font-size:10px;color:#44484F;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px;}
-.ud-field-v{font-size:13px;color:#88867F;font-family:monospace;}
-.ud-actions{display:flex;gap:.65rem;flex-wrap:wrap;}
-.action-btn{padding:.55rem 1rem;border-radius:20px;border:1px solid #22262B;background:transparent;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .18s;}
-.action-btn.pro{color:#C4956A;border-color:rgba(196,149,106,.3);}
-.action-btn.pro:hover{background:#251A10;}
-.action-btn.free{color:#b04040;border-color:rgba(176,64,64,.3);}
-.action-btn.free:hover{background:#1A0F0F;}
-.action-btn.contact{color:#6BA8B4;border-color:#163038;}
-.action-btn.contact:hover{background:#0F2226;}
-
 /* USERS TABLE */
-.table-wrap{background:#17191C;border:1px solid #1E2226;border-radius:14px;overflow:hidden;}
-.table-header{padding:.75rem 1.1rem;border-bottom:1px solid #1E2226;display:grid;grid-template-columns:1fr 2fr 80px 140px;gap:1rem;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#44484F;}
-.table-row{padding:.75rem 1.1rem;border-bottom:1px solid #1E2226;display:grid;grid-template-columns:1fr 2fr 80px 140px;gap:1rem;align-items:center;cursor:pointer;transition:background .15s;}
+.table-wrap{background:#17191C;border:1px solid #1E2226;border-radius:14px;overflow:hidden;overflow-x:auto;}
+.table-header{padding:.75rem 1.1rem;border-bottom:1px solid #1E2226;display:grid;grid-template-columns:2fr 70px 110px 110px 1fr 170px;gap:1rem;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#44484F;min-width:760px;}
+.table-row{padding:.75rem 1.1rem;border-bottom:1px solid #1E2226;display:grid;grid-template-columns:2fr 70px 110px 110px 1fr 170px;gap:1rem;align-items:center;min-width:760px;}
 .table-row:last-child{border-bottom:none;}
 .table-row:hover{background:#1E2226;}
-.table-row.selected{background:#0F2226;border-left:2px solid #5B8A94;}
 .tr-uid{font-size:11px;color:#44484F;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .tr-email{font-size:13px;color:#88867F;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.tr-plan{font-size:11px;padding:2px 8px;border-radius:20px;text-align:center;font-weight:500;}
+.tr-plan{font-size:11px;padding:2px 8px;border-radius:20px;text-align:center;font-weight:500;display:inline-block;}
 .tr-plan.pro{background:#251A10;color:#C4956A;}
 .tr-plan.free{background:#1E2226;color:#44484F;}
 .tr-date{font-size:11px;color:#44484F;font-family:monospace;}
+.tr-actions{display:flex;gap:.4rem;}
+.plan-btn{padding:.35rem .7rem;border-radius:20px;border:1px solid #22262B;background:transparent;font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s;color:#88867F;}
+.plan-btn:hover{border-color:#3D6B74;color:#6BA8B4;}
+.plan-btn.active{cursor:default;}
+.plan-btn.pro.active{background:#251A10;color:#C4956A;border-color:rgba(196,149,106,.4);}
+.plan-btn.free.active{background:#1E2226;color:#88867F;border-color:#2C3138;}
 .empty{padding:2rem;text-align:center;color:#44484F;font-size:13px;}
 
 /* TOAST */
@@ -121,35 +105,15 @@ body{font-family:'DM Sans',sans-serif;background:#111214;color:#E8E5DF;min-heigh
       <button class="refresh-btn" onclick="loadData()">↻ Refresh</button>
     </div>
 
-    <!-- USER DETAIL -->
-    <div class="user-detail" id="userDetail">
-      <div class="ud-header">
-        <div>
-          <div class="ud-uid" id="udUid">—</div>
-          <div class="ud-email" id="udEmail">—</div>
-        </div>
-        <div class="ud-badge free" id="udBadge">FREE</div>
-      </div>
-      <div class="ud-fields">
-        <div class="ud-field"><div class="ud-field-l">Created</div><div class="ud-field-v" id="udCreated">—</div></div>
-        <div class="ud-field"><div class="ud-field-l">Updated</div><div class="ud-field-v" id="udUpdated">—</div></div>
-        <div class="ud-field"><div class="ud-field-l">Stripe Customer</div><div class="ud-field-v" id="udStripe">—</div></div>
-        <div class="ud-field"><div class="ud-field-l">Subscription ID</div><div class="ud-field-v" id="udSub">—</div></div>
-      </div>
-      <div class="ud-actions">
-        <button class="action-btn pro" onclick="setPlan('pro')">✦ Grant Pro</button>
-        <button class="action-btn free" onclick="setPlan('free')">✕ Revoke Pro</button>
-        <button class="action-btn contact" onclick="contactUser()">✉ Email user</button>
-      </div>
-    </div>
-
     <!-- TABLE -->
     <div class="table-wrap">
       <div class="table-header">
-        <div>User ID</div>
         <div>Email</div>
         <div>Plan</div>
-        <div>Created</div>
+        <div>Registered</div>
+        <div>Updated</div>
+        <div>UID</div>
+        <div>Actions</div>
       </div>
       <div id="usersTable"><div class="empty">Loading...</div></div>
     </div>
@@ -163,7 +127,6 @@ body{font-family:'DM Sans',sans-serif;background:#111214;color:#E8E5DF;min-heigh
 const PROXY = 'https://grand-respect-production-f3b0.up.railway.app';
 let adminPwd = '';
 let allUsers = [];
-let selectedUid = null;
 
 function doLogin() {
   const pwd = document.getElementById('pwdInput').value;
@@ -214,6 +177,10 @@ async function loadData() {
   }
 }
 
+function fmtDate(v) {
+  return v ? String(v).slice(0,19).replace('T',' ') : '—';
+}
+
 function renderTable(users) {
   const el = document.getElementById('usersTable');
   if (!users.length) {
@@ -221,11 +188,16 @@ function renderTable(users) {
     return;
   }
   el.innerHTML = users.map(u => `
-    <div class="table-row ${u.uid === selectedUid ? 'selected' : ''}" onclick="selectUser('${u.uid}')">
-      <div class="tr-uid">${u.uid}</div>
+    <div class="table-row">
       <div class="tr-email">${u.email || '—'}</div>
       <div><span class="tr-plan ${u.plan}">${u.plan.toUpperCase()}</span></div>
-      <div class="tr-date">${u.createdAt ? u.createdAt.slice(0,10) : '—'}</div>
+      <div class="tr-date">${fmtDate(u.created_at)}</div>
+      <div class="tr-date">${fmtDate(u.updated_at)}</div>
+      <div class="tr-uid">${u.uid}</div>
+      <div class="tr-actions">
+        <button class="plan-btn pro ${u.plan === 'pro' ? 'active' : ''}" ${u.plan === 'pro' ? 'disabled' : ''} onclick="setPlan('${u.uid}','pro')">Set Pro</button>
+        <button class="plan-btn free ${u.plan === 'free' ? 'active' : ''}" ${u.plan === 'free' ? 'disabled' : ''} onclick="setPlan('${u.uid}','free')">Set Free</button>
+      </div>
     </div>
   `).join('');
 }
@@ -233,57 +205,37 @@ function renderTable(users) {
 function filterUsers() {
   const q = document.getElementById('searchInput').value.toLowerCase();
   if (!q) { renderTable(allUsers); return; }
-  renderTable(allUsers.filter(u => 
-    u.uid.toLowerCase().includes(q) || 
-    (u.email || '').toLowerCase().includes(q)
+  renderTable(allUsers.filter(u =>
+    (u.email || '').toLowerCase().includes(q) ||
+    u.uid.toLowerCase().includes(q)
   ));
 }
 
-function selectUser(uid) {
-  selectedUid = uid;
+async function setPlan(uid, plan) {
   const u = allUsers.find(x => x.uid === uid);
-  if (!u) return;
-  
-  document.getElementById('udUid').textContent = u.uid;
-  document.getElementById('udEmail').textContent = u.email || 'No email';
-  const badge = document.getElementById('udBadge');
-  badge.textContent = u.plan.toUpperCase();
-  badge.className = 'ud-badge ' + u.plan;
-  document.getElementById('udCreated').textContent = u.createdAt ? u.createdAt.slice(0,19).replace('T',' ') : '—';
-  document.getElementById('udUpdated').textContent = u.updatedAt ? u.updatedAt.slice(0,19).replace('T',' ') : '—';
-  document.getElementById('udStripe').textContent = u.stripeCustomerId || '—';
-  document.getElementById('udSub').textContent = u.subscriptionId || '—';
-  document.getElementById('userDetail').style.display = 'block';
-  renderTable(allUsers);
-}
+  const label = (u && u.email) ? u.email : uid;
+  if (!confirm(`Set ${label} to ${plan.toUpperCase()}?`)) return;
 
-async function setPlan(plan) {
-  if (!selectedUid) return;
   try {
-    const res = await fetch(PROXY + '/admin/users/' + selectedUid + '/plan', {
+    const res = await fetch(PROXY + '/admin/users/' + uid + '/plan', {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
-        'x-admin-password': adminPwd 
+        'x-admin-password': adminPwd
       },
       body: JSON.stringify({ plan })
     });
     if (res.ok) {
-      const u = allUsers.find(x => x.uid === selectedUid);
-      if (u) u.plan = plan;
-      selectUser(selectedUid);
-      renderTable(allUsers);
-      toast(plan === 'pro' ? '✦ Pro granted' : '✕ Pro revoked');
+      toast(plan === 'pro' ? '✦ Pro granted' : '✕ Set to free');
+      await loadData();
+      filterUsers();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      toast('Error: ' + (data.error || res.status), true);
     }
   } catch(e) {
     toast('Error: ' + e.message, true);
   }
-}
-
-function contactUser() {
-  const u = allUsers.find(x => x.uid === selectedUid);
-  if (!u || !u.email) { toast('No email for this user', true); return; }
-  window.open('mailto:' + u.email + '?subject=Claro Support');
 }
 
 function toast(msg, isErr = false) {
