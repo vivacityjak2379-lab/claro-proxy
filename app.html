@@ -72,7 +72,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);-webk
 .sb.col .userinfo{opacity:0;}
 .username{font-size:12px;color:var(--tx);font-weight:500;}
 .protag{font-size:9px;padding:1px 5px;border-radius:8px;background:var(--gl);color:var(--gd);margin-left:4px;}
-.usersub{font-size:10px;color:var(--t3);}
+.usersub{font-size:10px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.authlink{color:var(--t3);text-decoration:underline;cursor:pointer;white-space:nowrap;transition:color .15s;}
+.authlink:hover{color:var(--ac);}
 .thmbtn{background:none;border:none;cursor:pointer;color:var(--t3);padding:3px;border-radius:5px;flex-shrink:0;display:flex;transition:color .15s,opacity .2s;}
 .thmbtn:hover{color:var(--ac);}
 .sb.col .thmbtn{opacity:0;pointer-events:none;}
@@ -455,7 +457,7 @@ kbd{background:var(--s2);border:1px solid var(--bd);border-radius:4px;padding:1p
         <div class="av" id="userAv">?</div>
         <div class="userinfo">
           <div class="username" id="userName">You <span class="protag" id="proTag" style="display:none;">PRO</span></div>
-          <div class="usersub">speakclaro.co/app</div>
+          <div class="usersub" id="userSub">speakclaro.co/app</div>
         </div>
         <button class="thmbtn" onclick="event.stopPropagation();toggleTheme();" title="Toggle theme">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
@@ -562,8 +564,8 @@ kbd{background:var(--s2);border:1px solid var(--bd);border-radius:4px;padding:1p
 <!-- AUTH OVERLAY -->
 <div id="authOverlay" style="position:fixed;inset:0;z-index:9997;background:var(--sf);display:none;align-items:center;justify-content:center;">
   <div style="max-width:380px;width:90%;text-align:center;padding:1.5rem;">
-    <div style="font-family:'Cormorant Garamond',serif;font-weight:300;font-size:28px;color:var(--tx);margin-bottom:.4rem;">Save your progress</div>
-    <div style="font-size:13px;color:var(--t2);line-height:1.5;margin-bottom:1.5rem;">Create an account to sync your Pro status across devices. You can always do this later.</div>
+    <div id="authTitle" style="font-family:'Cormorant Garamond',serif;font-weight:300;font-size:28px;color:var(--tx);margin-bottom:.4rem;">Save your progress</div>
+    <div id="authSubtitle" style="font-size:13px;color:var(--t2);line-height:1.5;margin-bottom:1.5rem;">Create an account to sync your Pro status across devices. You can always do this later.</div>
     <input id="authEmail" type="email" placeholder="Email" autocomplete="email" style="width:100%;padding:.85rem 1rem;border:1.5px solid var(--bd);border-radius:12px;font-size:15px;background:var(--bg);color:var(--tx);outline:none;font-family:'DM Sans',sans-serif;margin-bottom:.7rem;transition:border-color .2s;"/>
     <input id="authPassword" type="password" placeholder="Password" autocomplete="current-password" style="width:100%;padding:.85rem 1rem;border:1.5px solid var(--bd);border-radius:12px;font-size:15px;background:var(--bg);color:var(--tx);outline:none;font-family:'DM Sans',sans-serif;margin-bottom:.5rem;transition:border-color .2s;"/>
     <div id="authError" style="font-size:12px;color:#b04040;min-height:16px;margin-bottom:.5rem;text-align:left;"></div>
@@ -916,6 +918,7 @@ async function sendMsg(){
     const reply = data.content?.[0]?.text || "I am here. Keep going.";
     addMsg('ai', reply);
     messages.push({role:'assistant',content:reply});
+    syncPlanFromServer();
   }catch(e){
     removeTyping();
     addMsg("ai","Something went quiet. Try again?");
@@ -1288,6 +1291,7 @@ function maybeShowAuthPrompt(cb){
   }
   const ov = document.getElementById('authOverlay');
   if(!ov){ cb(); return; }
+  setAuthMode('signup');
   _authResolve = cb;
   document.getElementById('authError').textContent = '';
   document.getElementById('authEmail').value = '';
@@ -1298,6 +1302,73 @@ function maybeShowAuthPrompt(cb){
     ov.style.transition = 'opacity .4s';
     ov.style.opacity = '1';
   });
+}
+
+function setAuthMode(mode){
+  const title = document.getElementById('authTitle');
+  const sub = document.getElementById('authSubtitle');
+  const signupBtn = document.getElementById('authSignupBtn');
+  const skip = document.getElementById('authSkip');
+  if(mode === 'login'){
+    if(title) title.textContent = 'Welcome back';
+    if(sub) sub.textContent = 'Log in to sync your Pro status on this device.';
+    if(signupBtn) signupBtn.style.display = 'none';
+    if(skip) skip.textContent = 'Cancel';
+  } else {
+    if(title) title.textContent = 'Save your progress';
+    if(sub) sub.textContent = 'Create an account to sync your Pro status across devices. You can always do this later.';
+    if(signupBtn) signupBtn.style.display = '';
+    if(skip) skip.textContent = 'Continue without account';
+  }
+}
+
+function openSignIn(){
+  const ov = document.getElementById('authOverlay');
+  if(!ov) return;
+  setAuthMode('login');
+  document.getElementById('authError').textContent = '';
+  document.getElementById('authEmail').value = '';
+  document.getElementById('authPassword').value = '';
+  _authResolve = function(){ updateAuthUI(); syncPlanFromServer(); };
+  ov.style.display = 'flex';
+  ov.style.opacity = '0';
+  requestAnimationFrame(function(){
+    ov.style.transition = 'opacity .4s';
+    ov.style.opacity = '1';
+  });
+}
+
+function updateAuthUI(){
+  const sub = document.getElementById('userSub');
+  if(!sub) return;
+  const email = localStorage.getItem('claro_email');
+  if(email){
+    sub.innerHTML = email + ' · <span class="authlink" onclick="event.stopPropagation();signOut()">Sign out</span>';
+  } else {
+    sub.innerHTML = 'speakclaro.co/app · <span class="authlink" onclick="event.stopPropagation();openSignIn()">Sign in</span>';
+  }
+}
+
+function signOut(){
+  localStorage.removeItem('claro_email');
+  localStorage.removeItem('claro_plan');
+  plan = 'free';
+  updateUI();
+  updateAuthUI();
+  toast('Signed out');
+}
+
+async function syncPlanFromServer(){
+  try{
+    const res = await fetch(PROXY_URL+'/check-plan/'+encodeURIComponent(USER_ID));
+    if(!res.ok) return;
+    const data = await res.json();
+    if(typeof data.plan === 'string' && data.plan !== plan){
+      plan = data.plan;
+      localStorage.setItem('claro_plan', plan);
+      updateUI();
+    }
+  }catch(e){}
 }
 
 function hideAuthOverlay(cb){
@@ -1425,6 +1496,7 @@ async function authSignup(){
     if(!res.ok){ errEl.textContent = data.error || 'Something went wrong.'; return; }
     localStorage.setItem('claro_email', data.email);
     if(data.plan){ plan = data.plan; localStorage.setItem('claro_plan', data.plan); updateUI(); }
+    updateAuthUI();
     toast('Account created');
     const proceed = _authResolve; _authResolve = null;
     hideAuthOverlay(function(){
@@ -1462,6 +1534,7 @@ async function authLogin(){
     plan = data.plan;
     localStorage.setItem('claro_plan', data.plan);
     updateUI();
+    updateAuthUI();
     toast('Welcome back');
     closeAuthPrompt();
   }catch(e){
@@ -1880,8 +1953,10 @@ document.addEventListener('keydown',function(e){
   buildCompanions();
   buildMoodGrid();
   updateUI();
+  updateAuthUI();
   updateLangUI();
   applyLangToUI();
+  syncPlanFromServer();
 
   if(!checkOnboarding()){
     maybeShowAuthPrompt(function(){
