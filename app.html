@@ -180,6 +180,9 @@ kbd{background:var(--s2);border:1px solid var(--bd);border-radius:4px;padding:1p
 /* ── ONBOARDING OVERLAY ── */
 #onboardingOverlay{position:fixed;inset:0;z-index:9997;background:var(--sf);display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;}
 #onboardingOverlay.done{display:none;}
+.ob-stage{position:relative;display:flex;align-items:center;justify-content:center;width:100%;}
+#obBack:hover{border-color:var(--ac);color:var(--ac);}
+#obBack:active{transform:scale(.92);}
 
 /* ── SPLASH ── */
 #splash{position:fixed;inset:0;z-index:9999;background:var(--sf);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;transition:opacity .6s ease,transform .6s ease;}
@@ -894,46 +897,131 @@ function checkOnboarding(){
 var _obQuiz = [];
 var _obQIdx = 0;
 var _obSelIdx = -1;
+var _obScreen = 'lang';
+var _obNameDraft = '';
 
-function showOnboarding(){
-  _obQuiz = []; _obQIdx = 0; _obSelIdx = -1;
-  const ov = document.getElementById('onboardingOverlay');
-  if(!ov) return;
-  ov.style.display = 'flex';
-  ov.style.opacity = '0';
-  setTimeout(function(){ ov.style.transition='opacity .4s'; ov.style.opacity='1'; }, 50);
-  obStep('lang');
+function obQList(){ return QUIZ[lang] || QUIZ.en; }
+function obTotalSteps(){ return obQList().length + 2; } // lang + quiz questions + name
+function obCurrentIndex(){
+  if(_obScreen === 'quiz') return 1 + _obQIdx;
+  if(_obScreen === 'name') return 1 + obQList().length;
+  return 0; // lang
 }
 
-function obStep(step){
+function showOnboarding(){
+  _obQuiz = []; _obQIdx = 0; _obSelIdx = -1; _obScreen = 'lang'; _obNameDraft = '';
   const ov = document.getElementById('onboardingOverlay');
   if(!ov) return;
+  ov.innerHTML = '';
+  ov.style.display = 'flex';
+  ov.style.opacity = '0';
 
-  // Fade out current content
-  const existing = ov.querySelector('.ob-wrap');
-  if(existing){
-    existing.style.transition = 'opacity .2s,transform .2s';
-    existing.style.opacity = '0';
-    existing.style.transform = 'translateY(8px)';
-    setTimeout(function(){ ov.innerHTML=''; obRender(step); }, 200);
-  } else {
-    obRender(step);
+  const back = document.createElement('button');
+  back.id = 'obBack';
+  back.setAttribute('aria-label', 'Back');
+  back.style.cssText = 'position:absolute;top:18px;left:18px;width:34px;height:34px;border-radius:50%;border:1.5px solid var(--bd);background:var(--sf);color:var(--t2);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s ease,border-color .15s,color .15s,transform .1s;z-index:1;font-family:DM Sans,sans-serif;';
+  back.innerHTML = '←';
+  back.onclick = obGoBack;
+  ov.appendChild(back);
+
+  const prog = document.createElement('div');
+  prog.id = 'obProgress';
+  prog.style.cssText = 'position:absolute;top:25px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:1;';
+  ov.appendChild(prog);
+
+  const stage = document.createElement('div');
+  stage.className = 'ob-stage';
+  ov.appendChild(stage);
+
+  setTimeout(function(){ ov.style.transition='opacity .4s'; ov.style.opacity='1'; }, 50);
+  obRender('lang', 'forward');
+}
+
+function obGoBack(){
+  if(_obScreen === 'quiz'){
+    if(_obQIdx === 0){
+      obStep('lang', 'back');
+    } else {
+      _obQIdx -= 1;
+      obStep('quiz', 'back');
+    }
+  } else if(_obScreen === 'name'){
+    _obQIdx = obQList().length - 1;
+    obStep('quiz', 'back');
   }
 }
 
-function obRender(step){
+function obStep(step, direction){
+  direction = direction || 'forward';
   const ov = document.getElementById('onboardingOverlay');
   if(!ov) return;
+  const stage = ov.querySelector('.ob-stage');
+  if(!stage) return;
+
+  const existing = stage.querySelector('.ob-wrap');
+  if(existing){
+    const exitX = direction==='forward' ? '-28px' : '28px';
+    existing.style.transition = 'opacity .2s ease,transform .2s ease';
+    existing.style.opacity = '0';
+    existing.style.transform = 'translateX('+exitX+')';
+    setTimeout(function(){ existing.remove(); obRender(step, direction); }, 190);
+  } else {
+    obRender(step, direction);
+  }
+}
+
+function obRender(step, direction){
+  const ov = document.getElementById('onboardingOverlay');
+  const stage = ov && ov.querySelector('.ob-stage');
+  if(!stage) return;
+  _obScreen = step;
 
   const wrap = document.createElement('div');
   wrap.className = 'ob-wrap';
-  wrap.style.cssText = 'max-width:440px;width:90%;padding:2.5rem 1.5rem;text-align:center;opacity:0;transform:translateY(8px);transition:opacity .3s,transform .3s;';
-  ov.appendChild(wrap);
-  setTimeout(function(){ wrap.style.opacity='1'; wrap.style.transform='translateY(0)'; }, 30);
+  const enterX = direction==='back' ? '-28px' : '28px';
+  wrap.style.cssText = 'max-width:440px;width:90%;padding:2.5rem 1.5rem;text-align:center;opacity:0;transform:translateX('+enterX+');transition:opacity .3s ease,transform .3s ease;';
+  stage.appendChild(wrap);
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){ wrap.style.opacity='1'; wrap.style.transform='translateX(0)'; });
+  });
 
   if(step === 'lang') obBuildLang(wrap);
   else if(step === 'quiz') obBuildQuiz(wrap);
   else if(step === 'name') obBuildName(wrap);
+
+  obStagger(wrap);
+  obUpdateProgress();
+  obUpdateBack();
+}
+
+function obStagger(wrap){
+  const items = wrap.querySelectorAll('.ob-item');
+  items.forEach(function(el, i){
+    el.style.opacity = '0';
+    el.style.animation = 'fadeUp .45s ease '+(0.1 + i*0.05).toFixed(2)+'s both';
+  });
+}
+
+function obUpdateProgress(){
+  const prog = document.getElementById('obProgress');
+  if(!prog) return;
+  const total = obTotalSteps();
+  const cur = obCurrentIndex();
+  prog.innerHTML = '';
+  for(let i=0;i<total;i++){
+    const dot = document.createElement('div');
+    const state = i===cur ? 'active' : (i<cur ? 'done' : 'todo');
+    dot.style.cssText = 'height:5px;border-radius:3px;transition:width .3s ease,background .3s ease;width:'+(state==='active'?'18px':'5px')+';background:'+(state==='todo'?'var(--bd)':'var(--ac)')+';';
+    prog.appendChild(dot);
+  }
+}
+
+function obUpdateBack(){
+  const back = document.getElementById('obBack');
+  if(!back) return;
+  const show = _obScreen !== 'lang';
+  back.style.opacity = show ? '1' : '0';
+  back.style.pointerEvents = show ? 'auto' : 'none';
 }
 
 function obBuildLang(wrap){
@@ -962,7 +1050,10 @@ function obBuildLang(wrap){
    {code:'fr',abbr:'Fr',name:'French',nat:'Français'}
   ].forEach(function(l){
     const btn = document.createElement('div');
-    btn.style.cssText = 'border:1.5px solid var(--bd);border-radius:14px;padding:14px 10px;cursor:pointer;transition:all .18s;background:var(--sf);';
+    btn.className = 'ob-item';
+    const isSel = l.code === lang;
+    btn.style.cssText = 'border:1.5px solid '+(isSel?'var(--ac)':'var(--bd)')+';border-radius:14px;padding:14px 10px;cursor:pointer;transition:border-color .18s,background .18s;background:'+(isSel?'var(--al)':'var(--sf)')+';';
+    btn._sel = isSel;
     btn.innerHTML =
       '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--ac);margin-bottom:3px;">'+l.abbr+'</div>'+
       '<div style="font-size:13px;font-weight:500;color:var(--tx);">'+l.name+'</div>'+
@@ -978,7 +1069,8 @@ function obBuildLang(wrap){
       localStorage.setItem('claro_lang', lang);
       updateLangUI();
       applyLangToUI();
-      setTimeout(function(){ obStep('quiz'); }, 280);
+      _obQuiz = []; _obQIdx = 0; _obSelIdx = -1;
+      setTimeout(function(){ obStep('quiz', 'forward'); }, 280);
     };
     grid.appendChild(btn);
   });
@@ -989,13 +1081,6 @@ function obBuildQuiz(wrap){
   const qList = QUIZ[lang] || QUIZ.en;
   const total = qList.length;
   const q = qList[_obQIdx]; const qOpts = q.a || q.opts || [];
-
-  // Progress
-  const prog = document.createElement('div');
-  prog.style.cssText = 'height:2px;background:var(--bd);border-radius:2px;margin-bottom:1.5rem;overflow:hidden;';
-  const fill = document.createElement('div');
-  fill.style.cssText = 'height:100%;background:var(--ac);border-radius:2px;width:'+Math.round(_obQIdx/total*100)+'%;transition:width .3s;';
-  prog.appendChild(fill); wrap.appendChild(prog);
 
   // Step label
   const step = document.createElement('div');
@@ -1010,20 +1095,28 @@ function obBuildQuiz(wrap){
   qEl.textContent = q.q;
   wrap.appendChild(qEl);
 
+  // Restore a previously chosen answer for this question, if any (back navigation)
+  const savedAnswer = _obQuiz[_obQIdx];
+  const savedIdx = savedAnswer != null ? qOpts.indexOf(savedAnswer) : -1;
+  _obSelIdx = savedIdx;
+
   // Next button (declared here so forEach can reference it)
   const nextBtn = document.createElement('button');
-  nextBtn.style.cssText = 'width:100%;padding:.82rem;border-radius:50px;background:var(--tx);color:var(--sf);border:none;font-size:14px;cursor:pointer;font-family:DM Sans,sans-serif;opacity:.3;pointer-events:none;transition:opacity .2s;';
+  const nextReady = savedIdx > -1;
+  nextBtn.style.cssText = 'width:100%;padding:.82rem;border-radius:50px;background:var(--tx);color:var(--sf);border:none;font-size:14px;cursor:pointer;font-family:DM Sans,sans-serif;opacity:'+(nextReady?'1':'.3')+';pointer-events:'+(nextReady?'auto':'none')+';transition:opacity .2s;';
   const nextW = {en:'Next →',ru:'Далее →',es:'Siguiente →',fr:'Suivant →'};
   nextBtn.textContent = nextW[lang]||'Next →';
 
   // Options
   const opts = document.createElement('div');
   opts.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin-bottom:1.5rem;';
-  let selIdx = -1;
+  let selIdx = savedIdx;
 
   qOpts.forEach(function(answer, i){
     const btn = document.createElement('button');
-    btn.style.cssText = 'border:1.5px solid var(--bd);border-radius:10px;padding:11px 16px;font-size:14px;color:var(--t2);text-align:left;transition:all .15s;background:var(--sf);cursor:pointer;font-family:DM Sans,sans-serif;width:100%;';
+    btn.className = 'ob-item';
+    const isSel = i === savedIdx;
+    btn.style.cssText = 'border:1.5px solid '+(isSel?'var(--ac)':'var(--bd)')+';border-radius:10px;padding:11px 16px;font-size:14px;color:'+(isSel?'var(--ac)':'var(--t2)')+';text-align:left;transition:border-color .15s,background .15s,color .15s;background:'+(isSel?'var(--al)':'var(--sf)')+';cursor:pointer;font-family:DM Sans,sans-serif;width:100%;';
     btn.textContent = answer;
     btn.onmouseenter = function(){ if(selIdx!==i) btn.style.borderColor='var(--ac)'; };
     btn.onmouseleave = function(){ if(selIdx!==i) btn.style.borderColor='var(--bd)'; };
@@ -1042,15 +1135,15 @@ function obBuildQuiz(wrap){
 
   nextBtn.onclick = function(){
     if(_obSelIdx === -1) return;
-    _obQuiz.push(qOpts[_obSelIdx]);
+    _obQuiz[_obQIdx] = qOpts[_obSelIdx];
     const nextIdx = _obQIdx + 1;
     if(nextIdx < total){
       _obQIdx = nextIdx;
       _obSelIdx = -1;
-      obStep('quiz');
+      obStep('quiz', 'forward');
     } else {
       localStorage.setItem('claro_quiz', JSON.stringify(_obQuiz));
-      obStep('name');
+      obStep('name', 'forward');
     }
   };
   wrap.appendChild(nextBtn);
@@ -1070,16 +1163,20 @@ function obBuildName(wrap){
   wrap.appendChild(sub);
 
   const inp = document.createElement('input');
+  inp.className = 'ob-item';
   inp.type='text'; inp.maxLength=30;
   const phs = {en:'Your name (optional)',ru:'Твоё имя (необязательно)',es:'Tu nombre (opcional)',fr:'Ton prénom (optionnel)'};
   inp.placeholder = phs[lang]||phs.en;
+  inp.value = _obNameDraft;
   inp.style.cssText = 'width:100%;padding:.85rem 1rem;border:1.5px solid var(--bd);border-radius:12px;font-size:15px;background:var(--bg);color:var(--tx);outline:none;text-align:center;font-family:DM Sans,sans-serif;margin-bottom:1rem;transition:border-color .2s;';
   inp.onfocus = function(){ inp.style.borderColor='var(--ac)'; };
   inp.onblur  = function(){ inp.style.borderColor='var(--bd)'; };
+  inp.oninput = function(){ _obNameDraft = inp.value; };
   inp.onkeydown = function(e){ if(e.key==='Enter') done(); };
   wrap.appendChild(inp);
 
   const startBtn = document.createElement('button');
+  startBtn.className = 'ob-item';
   startBtn.style.cssText = 'width:100%;padding:.85rem;border-radius:50px;background:var(--tx);color:var(--sf);border:none;font-size:14px;cursor:pointer;font-family:DM Sans,sans-serif;transition:opacity .18s;';
   const starts = {en:'Start talking →',ru:'Начать говорить →',es:'Empezar →',fr:'Commencer →'};
   startBtn.textContent = starts[lang]||starts.en;
@@ -1107,6 +1204,7 @@ function obBuildName(wrap){
 
   // Skip
   const skip = document.createElement('div');
+  skip.className = 'ob-item';
   skip.style.cssText = 'font-size:12px;color:var(--t3);margin-top:1rem;cursor:pointer;text-decoration:underline;';
   const skips = {en:'Skip',ru:'Пропустить',es:'Omitir',fr:'Ignorer'};
   skip.textContent = skips[lang]||skips.en;
