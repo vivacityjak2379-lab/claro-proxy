@@ -1,4 +1,5 @@
 const express = require('express');
+const bcrypt = require('bcrypt');
 const { Pool } = require('pg');
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -28,6 +29,7 @@ async function initDB() {
       updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT`);
   console.log('✓ DB ready');
 }
 
@@ -36,6 +38,16 @@ async function initDB() {
 async function getUser(uid) {
   const { rows } = await pool.query('SELECT * FROM users WHERE uid = $1', [uid]);
   return rows[0] || null;
+}
+
+function isValidEmail(email) {
+  return typeof email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function redact(user) {
+  if (!user) return user;
+  const { password_hash, ...safe } = user;
+  return safe;
 }
 
 async function upsertUser(uid, fields) {
@@ -232,6 +244,76 @@ app.post('/register', async (req, res) => {
   }
 });
 
+// ─── EMAIL AUTH ──────────────────────────────────────────────────────────────
+// Optional account layer on top of the anonymous uid. Registering/logging in
+// lets a user sync Pro status across devices — it never blocks anonymous
+// chat access, which keeps working off the uid alone (see /v1/messages).
+
+app.post('/auth/register', async (req, res) => {
+  const { uid, email, password } = req.body;
+
+  if (!uid) return res.status(400).json({ error: 'uid required' });
+  if (!isValidEmail(email)) return res.status(400).json({ error: 'Valid email required' });
+  if (!password || password.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  }
+
+  try {
+    const { rows: taken } = await pool.query(
+      'SELECT uid FROM users WHERE email = $1 AND password_hash IS NOT NULL AND uid != $2',
+      [email, uid]
+    );
+    if (taken.length > 0) {
+      return res.status(409).json({ error: 'Email already registered. Try logging in instead.' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const existing = await getUser(uid);
+
+    if (!existing) {
+      await pool.query(
+        "INSERT INTO users (uid, plan, email, password_hash) VALUES ($1, 'free', $2, $3)",
+        [uid, email, passwordHash]
+      );
+    } else {
+      await pool.query(
+        'UPDATE users SET email = $1, password_hash = $2, updated_at = NOW() WHERE uid = $3',
+        [email, passwordHash, uid]
+      );
+    }
+
+    const user = await getUser(uid);
+    res.json({ ok: true, uid: user.uid, email: user.email, plan: user.plan });
+  } catch (err) {
+    console.error('/auth/register error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+  if (!isValidEmail(email) || !password) {
+    return res.status(400).json({ error: 'Email and password required' });
+  }
+
+  try {
+    const { rows } = await pool.query(
+      'SELECT * FROM users WHERE email = $1 AND password_hash IS NOT NULL',
+      [email]
+    );
+    const user = rows[0];
+    if (!user) return res.status(401).json({ error: 'Invalid email or password' });
+
+    const match = await bcrypt.compare(password, user.password_hash);
+    if (!match) return res.status(401).json({ error: 'Invalid email or password' });
+
+    res.json({ ok: true, uid: user.uid, email: user.email, plan: user.plan });
+  } catch (err) {
+    console.error('/auth/login error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── ADMIN ───────────────────────────────────────────────────────────────────
 
 function adminAuth(req, res, next) {
@@ -244,7 +326,7 @@ function adminAuth(req, res, next) {
 app.get('/admin/users', adminAuth, async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT * FROM users ORDER BY created_at DESC');
-    res.json({ users: rows, total: rows.length });
+    res.json({ users: rows.map(redact), total: rows.length });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -254,7 +336,7 @@ app.get('/admin/users/:uid', adminAuth, async (req, res) => {
   try {
     const user = await getUser(req.params.uid);
     if (!user) return res.status(404).json({ error: 'User not found' });
-    res.json(user);
+    res.json(redact(user));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

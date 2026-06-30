@@ -515,6 +515,20 @@ kbd{background:var(--s2);border:1px solid var(--bd);border-radius:4px;padding:1p
   </div>
 </div>
 
+<!-- AUTH OVERLAY -->
+<div id="authOverlay" style="position:fixed;inset:0;z-index:9997;background:var(--sf);display:none;align-items:center;justify-content:center;">
+  <div style="max-width:380px;width:90%;text-align:center;padding:1.5rem;">
+    <div style="font-family:'Cormorant Garamond',serif;font-weight:300;font-size:28px;color:var(--tx);margin-bottom:.4rem;">Save your progress</div>
+    <div style="font-size:13px;color:var(--t2);line-height:1.5;margin-bottom:1.5rem;">Create an account to sync your Pro status across devices. You can always do this later.</div>
+    <input id="authEmail" type="email" placeholder="Email" autocomplete="email" style="width:100%;padding:.85rem 1rem;border:1.5px solid var(--bd);border-radius:12px;font-size:15px;background:var(--bg);color:var(--tx);outline:none;font-family:'DM Sans',sans-serif;margin-bottom:.7rem;transition:border-color .2s;"/>
+    <input id="authPassword" type="password" placeholder="Password" autocomplete="current-password" style="width:100%;padding:.85rem 1rem;border:1.5px solid var(--bd);border-radius:12px;font-size:15px;background:var(--bg);color:var(--tx);outline:none;font-family:'DM Sans',sans-serif;margin-bottom:.5rem;transition:border-color .2s;"/>
+    <div id="authError" style="font-size:12px;color:#b04040;min-height:16px;margin-bottom:.5rem;text-align:left;"></div>
+    <button id="authSignupBtn" onclick="authSignup()" style="width:100%;padding:.85rem;border-radius:50px;background:var(--tx);color:var(--sf);border:none;font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity .18s;margin-bottom:.6rem;">Sign up</button>
+    <button id="authLoginBtn" onclick="authLogin()" style="width:100%;padding:.85rem;border-radius:50px;background:transparent;color:var(--ac);border:1.5px solid var(--ac);font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity .18s;">Log in</button>
+    <div id="authSkip" onclick="authSkipClick()" style="font-size:12px;color:var(--t3);margin-top:1.25rem;cursor:pointer;text-decoration:underline;">Continue without account</div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <!-- ONBOARDING OVERLAY -->
@@ -532,7 +546,7 @@ function getUID(){
   if(!uid){ uid = 'claro_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); localStorage.setItem('claro_uid',uid); }
   return uid;
 }
-const USER_ID = getUID();
+let USER_ID = getUID();
 let mode = localStorage.getItem('claro_last_mode') || 'claro';
 let lang = localStorage.getItem('claro_lang') || 'en';
 let plan = localStorage.getItem('claro_plan') || 'free';
@@ -1083,7 +1097,8 @@ function obBuildName(wrap){
         ov.style.display='none';
         ov.style.opacity='';
         ov.style.transition='';
-        updateUI(); applyLangToUI(); newChat(); registerUser();
+        updateUI(); applyLangToUI();
+        maybeShowAuthPrompt(function(){ newChat(); registerUser(); });
       }, 400);
     }
   }
@@ -1120,6 +1135,111 @@ async function syncPro(){
       body:JSON.stringify({uid:USER_ID, plan:'pro'})
     });
   }catch(e){}
+}
+
+// ═══ EMAIL AUTH ═══
+// Optional account layer on top of the anonymous uid. Shown once; skipping
+// it leaves the existing anonymous free-plan flow untouched.
+var _authResolve = null;
+
+function maybeShowAuthPrompt(cb){
+  if(localStorage.getItem('claro_email') || localStorage.getItem('claro_auth_prompted')){
+    cb();
+    return;
+  }
+  const ov = document.getElementById('authOverlay');
+  if(!ov){ cb(); return; }
+  _authResolve = cb;
+  document.getElementById('authError').textContent = '';
+  document.getElementById('authEmail').value = '';
+  document.getElementById('authPassword').value = '';
+  ov.style.display = 'flex';
+  ov.style.opacity = '0';
+  requestAnimationFrame(function(){
+    ov.style.transition = 'opacity .4s';
+    ov.style.opacity = '1';
+  });
+}
+
+function closeAuthPrompt(){
+  localStorage.setItem('claro_auth_prompted','1');
+  const ov = document.getElementById('authOverlay');
+  const cb = _authResolve; _authResolve = null;
+  if(!ov){ if(cb) cb(); return; }
+  ov.style.transition = 'opacity .4s';
+  ov.style.opacity = '0';
+  setTimeout(function(){
+    ov.style.display = 'none';
+    ov.style.transition = '';
+    if(cb) cb();
+  }, 400);
+}
+
+function authSkipClick(){
+  closeAuthPrompt();
+}
+
+function authSetLoading(loading){
+  const s = document.getElementById('authSignupBtn');
+  const l = document.getElementById('authLoginBtn');
+  if(s){ s.disabled = loading; s.style.opacity = loading ? '.6' : '1'; }
+  if(l){ l.disabled = loading; l.style.opacity = loading ? '.6' : '1'; }
+}
+
+async function authSignup(){
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const errEl = document.getElementById('authError');
+  errEl.textContent = '';
+  if(!email || !password){ errEl.textContent = 'Enter an email and password.'; return; }
+  authSetLoading(true);
+  try{
+    const res = await fetch(PROXY_URL+'/auth/register',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({uid:USER_ID, email, password})
+    });
+    const data = await res.json();
+    authSetLoading(false);
+    if(!res.ok){ errEl.textContent = data.error || 'Something went wrong.'; return; }
+    localStorage.setItem('claro_email', data.email);
+    if(data.plan){ plan = data.plan; localStorage.setItem('claro_plan', data.plan); updateUI(); }
+    toast('Account created');
+    closeAuthPrompt();
+  }catch(e){
+    authSetLoading(false);
+    errEl.textContent = 'Network error. Try again.';
+  }
+}
+
+async function authLogin(){
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const errEl = document.getElementById('authError');
+  errEl.textContent = '';
+  if(!email || !password){ errEl.textContent = 'Enter an email and password.'; return; }
+  authSetLoading(true);
+  try{
+    const res = await fetch(PROXY_URL+'/auth/login',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email, password})
+    });
+    const data = await res.json();
+    authSetLoading(false);
+    if(!res.ok){ errEl.textContent = data.error || 'Invalid email or password.'; return; }
+    USER_ID = data.uid;
+    localStorage.setItem('claro_uid', data.uid);
+    localStorage.setItem('claro_email', data.email);
+    plan = data.plan;
+    localStorage.setItem('claro_plan', data.plan);
+    updateUI();
+    toast('Welcome back');
+    closeAuthPrompt();
+  }catch(e){
+    authSetLoading(false);
+    errEl.textContent = 'Network error. Try again.';
+  }
 }
 
 // ═══ SIDEBAR CONTROLS ═══
@@ -1536,11 +1656,13 @@ document.addEventListener('keydown',function(e){
   applyLangToUI();
 
   if(!checkOnboarding()){
-    newChat();
-    if(!localStorage.getItem('claro_registered')){
-      registerUser();
-      localStorage.setItem('claro_registered','1');
-    }
+    maybeShowAuthPrompt(function(){
+      newChat();
+      if(!localStorage.getItem('claro_registered')){
+        registerUser();
+        localStorage.setItem('claro_registered','1');
+      }
+    });
   }
 })();
 </script>
