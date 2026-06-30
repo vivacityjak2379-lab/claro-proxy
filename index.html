@@ -207,7 +207,7 @@ footer{background:var(--s2);border-top:1px solid var(--bd);padding:3rem 2rem;tex
   <h1 class="hero-h2">A space to think clearly,<br>feel understood, move forward.</h1>
   <p class="hero-sub">Four AI companions — mindfulness coach, supportive friend, therapist, life mentor — each one different, all designed for real conversation.</p>
   <div class="hero-btns">
-    <a href="/app.html" class="btn-p">Try web app →</a>
+    <a href="#" class="btn-p" id="mainCTA" onclick="goToApp();return false;">Try web app →</a>
     <a href="#waitlist" class="btn-g" onclick="document.getElementById('waitlist').scrollIntoView({behavior:'smooth'});return false;">Join waitlist</a>
   </div>
   <div style="margin-top:1rem;font-size:12px;color:var(--t3);display:flex;align-items:center;justify-content:center;gap:1rem;flex-wrap:wrap;">
@@ -511,7 +511,7 @@ footer{background:var(--s2);border-top:1px solid var(--bd);padding:3rem 2rem;tex
       <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--gd);margin-bottom:.75rem;">Early Access</div>
       <div style="font-size:15px;font-weight:500;color:var(--tx);margin-bottom:.35rem;">Try it now — free</div>
       <div style="font-size:13px;color:var(--t2);font-weight:300;line-height:1.6;margin-bottom:1rem;">No download. No account. Just open the web app and start talking.</div>
-      <a href="/app.html" style="display:inline-block;padding:.65rem 1.25rem;border-radius:50px;background:var(--tx);color:var(--sf);font-size:13px;text-decoration:none;font-family:'DM Sans',sans-serif;transition:opacity .18s;" onmouseenter="this.style.opacity='.85'" onmouseleave="this.style.opacity='1'">Open web app →</a>
+      <a href="#" onclick="goToApp();return false;" style="display:inline-block;padding:.65rem 1.25rem;border-radius:50px;background:var(--tx);color:var(--sf);font-size:13px;text-decoration:none;font-family:'DM Sans',sans-serif;transition:opacity .18s;" onmouseenter="this.style.opacity='.85'" onmouseleave="this.style.opacity='1'">Open the app →</a>
     </div>
 
   </div>
@@ -611,6 +611,97 @@ async function submitWaitlist(e){
     document.getElementById('wlSuccess').style.display='block';
   }
 }
+</script>
+<script>
+function isMobileDevice(){
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+}
+
+function goToApp(){
+  if(isMobileDevice()){
+    showMobileModal();
+  } else {
+    window.location.href = '/app.html';
+  }
+}
+
+function showMobileModal(){
+  // Remove existing modal if any
+  var existing = document.getElementById('mobileModal');
+  if(existing) existing.remove();
+
+  var modal = document.createElement('div');
+  modal.id = 'mobileModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(26,31,36,.6);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .25s ease;';
+
+  modal.innerHTML = `
+    <div style="background:var(--sf,#FDFCFA);border-radius:24px 24px 0 0;padding:2rem 1.5rem 3rem;width:100%;max-width:480px;animation:slideUp .3s cubic-bezier(.4,0,.2,1);">
+
+      <div style="width:36px;height:4px;border-radius:2px;background:var(--bd,#DDD9D1);margin:0 auto 1.75rem;"></div>
+
+      <div style="text-align:center;">
+        <div style="width:64px;height:64px;border-radius:18px;background:var(--al,#EAF2F4);display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#5B8A94" stroke-width="1.5">
+            <rect x="5" y="2" width="14" height="20" rx="2"/>
+            <line x1="12" y1="18" x2="12" y2="18" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+
+        <div style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:#1A1F24;margin-bottom:.5rem;">
+          Coming soon
+        </div>
+
+        <div style="font-size:13px;color:#A8A49C;line-height:1.7;margin-bottom:1.75rem;font-weight:300;">
+          The Claro mobile app is currently in development.<br>
+          Open speakclaro.co on your computer<br>to try the web version now.
+        </div>
+
+        <div style="background:#F6F4F0;border-radius:14px;padding:1rem 1.25rem;margin-bottom:1.5rem;text-align:left;">
+          <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#A8A49C;margin-bottom:.6rem;">Get notified when it launches</div>
+          <div style="display:flex;gap:8px;">
+            <input id="modalEmail" type="email" placeholder="your@email.com" style="flex:1;border:1.5px solid #DDD9D1;border-radius:10px;padding:.65rem .85rem;font-size:14px;background:#FDFCFA;color:#1A1F24;outline:none;font-family:'DM Sans',sans-serif;" onfocus="this.style.borderColor='#5B8A94'" onblur="this.style.borderColor='#DDD9D1'"/>
+            <button onclick="submitModalEmail()" style="padding:.65rem 1rem;border-radius:10px;background:#1A1F24;color:#FDFCFA;border:none;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">Notify me</button>
+          </div>
+          <div id="modalEmailMsg" style="font-size:12px;color:#5B8A94;margin-top:.5rem;display:none;">✓ You're on the list!</div>
+        </div>
+
+        <button onclick="closeMobileModal()" style="width:100%;padding:.82rem;border-radius:50px;border:1.5px solid #DDD9D1;background:transparent;color:#6A6760;font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;">
+          Close
+        </button>
+      </div>
+    </div>
+  `;
+
+  modal.addEventListener('click', function(e){
+    if(e.target === modal) closeMobileModal();
+  });
+
+  document.body.appendChild(modal);
+}
+
+function closeMobileModal(){
+  var modal = document.getElementById('mobileModal');
+  if(modal){
+    modal.style.opacity = '0';
+    modal.style.transition = 'opacity .25s';
+    setTimeout(function(){ modal.remove(); }, 250);
+  }
+}
+
+function submitModalEmail(){
+  var email = document.getElementById('modalEmail');
+  if(!email || !email.value.includes('@')) return;
+  // Save to localStorage as fallback
+  localStorage.setItem('claro_waitlist_email', email.value);
+  document.getElementById('modalEmail').style.display = 'none';
+  document.querySelector('#mobileModal button[onclick="submitModalEmail()"]').style.display = 'none';
+  document.getElementById('modalEmailMsg').style.display = 'block';
+}
+
+// Add animations
+var styleEl = document.createElement('style');
+styleEl.textContent = '@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}';
+document.head.appendChild(styleEl);
 </script>
 </body>
 </html>
