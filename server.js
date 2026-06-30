@@ -206,7 +206,8 @@ app.get('/check-plan/:uid', async (req, res) => {
 // ─── REGISTER USER ───────────────────────────────────────────────────────────
 
 app.post('/register', async (req, res) => {
-  const { uid, email, plan } = req.body;
+  const { uid, email } = req.body;
+  // plan is intentionally ignored from client — only Stripe webhook sets plan='pro'
   if (!uid) return res.status(400).json({ error: 'uid required' });
 
   try {
@@ -214,21 +215,14 @@ app.post('/register', async (req, res) => {
 
     if (!existing) {
       await pool.query(
-        'INSERT INTO users (uid, plan, email) VALUES ($1, $2, $3)',
-        [uid, plan || 'free', email || '']
+        "INSERT INTO users (uid, plan, email) VALUES ($1, 'free', $2)",
+        [uid, email || '']
       );
-    } else {
-      // Only upgrade plan via this endpoint, never downgrade
-      const updates = {};
-      if (email && !existing.email) updates.email = email;
-      if (plan === 'pro' && existing.plan !== 'pro') {
-        updates.plan = 'pro';
-        updates.activated_at = new Date().toISOString();
-        console.log('Pro synced via /register for uid:', uid);
-      }
-      if (Object.keys(updates).length > 0) {
-        await upsertUser(uid, updates);
-      }
+    } else if (email && !existing.email) {
+      await pool.query(
+        'UPDATE users SET email = $1, updated_at = NOW() WHERE uid = $2',
+        [email, uid]
+      );
     }
 
     res.json({ ok: true });
