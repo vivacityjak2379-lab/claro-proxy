@@ -107,11 +107,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);-webk
 .mbub.you{background:var(--tx);color:var(--sf);border-radius:16px 16px 4px 16px;display:inline-block;}
 .mtime{font-size:10px;color:var(--t4);margin-top:4px;padding:0 2px;}
 .mtime.r{text-align:right;}
-.typing{display:flex;gap:4px;align-items:center;height:20px;}
-.typing span{width:5px;height:5px;border-radius:50%;background:var(--t3);animation:tp 1.2s infinite;}
-.typing span:nth-child(2){animation-delay:.2s;}
-.typing span:nth-child(3){animation-delay:.4s;}
-@keyframes tp{0%,60%,100%{transform:translateY(0);}30%{transform:translateY(-5px);}}
+.typing{display:flex;gap:5px;align-items:center;height:22px;}
+.typing span{width:6px;height:6px;border-radius:50%;background:var(--t2);animation:tp 1.4s cubic-bezier(.4,0,.6,1) infinite;}
+.typing span:nth-child(2){animation-delay:.18s;}
+.typing span:nth-child(3){animation-delay:.36s;}
+@keyframes tp{0%,65%,100%{opacity:.28;transform:translateY(0) scale(.9);}32%{opacity:1;transform:translateY(-5px) scale(1);}}
 
 /* ── RIGHT PANEL ── */
 .rpanel{width:230px;border-left:1px solid var(--bd);background:var(--sb);display:flex;flex-direction:column;transition:width .25s cubic-bezier(.4,0,.2,1);overflow:hidden;flex-shrink:0;}
@@ -206,6 +206,83 @@ kbd{background:var(--s2);border:1px solid var(--bd);border-radius:4px;padding:1p
 /* ── TOAST ── */
 #toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--tx);color:var(--sf);padding:.6rem 1.25rem;border-radius:50px;font-size:13px;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
 #toast.show{opacity:1;}
+
+/* ── POLISH ── */
+
+/* Sidebar items — smoother easing (JS only toggles .on class, safe) */
+.ci{transition:background .2s cubic-bezier(.4,0,.2,1);}
+
+/* Sidebar toggle button — subtle scale */
+.toggle{transition:background .18s cubic-bezier(.4,0,.2,1),transform .15s;}
+.toggle:hover{background:var(--s2);transform:scale(1.07);}
+
+/* Head buttons — smoother easing only; NOT adding background to avoid
+   conflicting with .hbtn.on which JS toggles via classList */
+.hbtn{transition:border-color .18s cubic-bezier(.4,0,.2,1),color .18s,background .18s;}
+
+/* Send button — scale on hover */
+.sendbtn{transition:background .18s cubic-bezier(.4,0,.2,1),transform .14s;}
+.sendbtn:hover{background:var(--ac);transform:scale(1.08);}
+
+/* Input tool icon */
+.itool{transition:background .18s cubic-bezier(.4,0,.2,1),color .18s;}
+
+/* Input focus ring */
+.inpwrap{transition:border-color .2s cubic-bezier(.4,0,.2,1),box-shadow .2s;}
+.inpwrap:focus-within{border-color:var(--ac);box-shadow:0 0 0 3px rgba(91,138,148,.12);}
+
+/* Mood cards — smoother easing (JS only toggles .sel, border/bg values preserved) */
+.moodcard{transition:border-color .2s cubic-bezier(.4,0,.2,1),background .2s cubic-bezier(.4,0,.2,1);}
+
+/* Insight cards — hover glow */
+.insightcard{transition:border-color .2s,box-shadow .2s;}
+.insightcard:hover{border-color:var(--am);box-shadow:0 3px 12px rgba(91,138,148,.08);}
+
+/* Right panel tool buttons — smoother easing */
+.toolbtn{transition:border-color .2s cubic-bezier(.4,0,.2,1),background .2s cubic-bezier(.4,0,.2,1),color .2s;}
+
+/* Language pills — smoother easing */
+.lang-pill{transition:border-color .18s cubic-bezier(.4,0,.2,1),color .18s,background .18s;}
+
+/* Theme toggle — sun rotation on hover */
+.thmbtn{transition:color .18s,transform .22s cubic-bezier(.4,0,.2,1);}
+.thmbtn:hover{color:var(--ac);transform:rotate(20deg);}
+
+/* User row — smoother easing */
+.userrow{transition:background .2s cubic-bezier(.4,0,.2,1);}
+
+/* Pro close button */
+.pro-closebtn{transition:opacity .18s,transform .15s;}
+.pro-closebtn:hover{opacity:.88;transform:translateY(-1px);}
+
+/* ── TYPING & SKELETON ── */
+
+/* Fade-in animation for message rows (reused by skeleton too) */
+@keyframes fadeInMsg{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+/* Shimmer keyframe for skeleton bubble */
+@keyframes shimmer{0%{background-position:-300% 0;}100%{background-position:300% 0;}}
+
+/* Typing indicator appears with a gentle lift */
+#typdiv{animation:fadeInMsg .28s cubic-bezier(0,0,.2,1);}
+
+/* Skeleton shimmer on the typing bubble — hooks into #typdiv set by showTyping() */
+#typdiv .mbub.ai{
+  background:linear-gradient(90deg,var(--sf) 20%,var(--s2) 50%,var(--sf) 80%);
+  background-size:300% 100%;
+  animation:shimmer 1.8s ease infinite;
+  min-width:120px;
+  min-height:44px;
+  border-color:transparent;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* Respect prefers-reduced-motion */
+@media(prefers-reduced-motion:reduce){
+  *{transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important;}
+}
 </style>
 </head>
 <body>

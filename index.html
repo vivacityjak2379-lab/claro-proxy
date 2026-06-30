@@ -153,7 +153,7 @@ footer{background:var(--s2);border-top:1px solid var(--bd);padding:3rem 2rem;tex
 #bgacc::after{content:'';position:absolute;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(196,149,106,.04) 0%,transparent 70%);bottom:-100px;left:-100px;}
 
 /* SCROLL REVEAL */
-.reveal{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease;}
+.reveal{opacity:0;transform:translateY(16px);transition:opacity .65s cubic-bezier(0,0,.2,1),transform .65s cubic-bezier(0,0,.2,1);}
 .reveal.visible{opacity:1;transform:translateY(0);}
 
 @media(max-width:640px){
@@ -175,6 +175,63 @@ footer{background:var(--s2);border-top:1px solid var(--bd);padding:3rem 2rem;tex
 .waitlist-success-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;color:var(--tx);margin-bottom:.3rem;}
 .waitlist-success-sub{font-size:13px;color:var(--t2);font-weight:300;}
 .coming-badge{display:inline-block;font-size:11px;padding:4px 12px;border-radius:20px;background:var(--acl);color:var(--ac);border:1px solid var(--acm);letter-spacing:.06em;margin-bottom:1rem;font-weight:400;}
+
+/* ── POLISH ── */
+
+/* Stagger — companion grid */
+.comp-grid .cc:nth-child(2){transition-delay:.07s;}
+.comp-grid .cc:nth-child(3){transition-delay:.14s;}
+.comp-grid .cc:nth-child(4){transition-delay:.21s;}
+.comp-grid .cc:nth-child(2):hover,.comp-grid .cc:nth-child(3):hover,.comp-grid .cc:nth-child(4):hover{transition-delay:0s;}
+
+/* Stagger — steps */
+.steps .step:nth-child(2){transition-delay:.08s;}
+.steps .step:nth-child(3){transition-delay:.16s;}
+.steps .step:nth-child(4){transition-delay:.24s;}
+
+/* Stagger — privacy grid */
+.priv-grid .pr:nth-child(2){transition-delay:.07s;}
+.priv-grid .pr:nth-child(3){transition-delay:.14s;}
+.priv-grid .pr:nth-child(4){transition-delay:.21s;}
+.priv-grid .pr:nth-child(2):hover,.priv-grid .pr:nth-child(3):hover,.priv-grid .pr:nth-child(4):hover{transition-delay:0s;}
+
+/* Stagger — pricing */
+.price-grid .prc:nth-child(2){transition-delay:.1s;}
+.price-grid .prc:nth-child(2):hover{transition-delay:0s;}
+
+/* Card hover refinements */
+.cc{transition:border-color .26s cubic-bezier(.4,0,.2,1),transform .26s cubic-bezier(.4,0,.2,1),box-shadow .26s cubic-bezier(.4,0,.2,1);}
+.cc:hover{border-color:var(--ac);transform:translateY(-5px);box-shadow:0 16px 40px rgba(91,138,148,.13),0 2px 8px rgba(0,0,0,.04);}
+
+.pr{transition:border-color .22s cubic-bezier(.4,0,.2,1),box-shadow .22s cubic-bezier(.4,0,.2,1);}
+.pr:hover{border-color:var(--am);box-shadow:0 6px 20px rgba(91,138,148,.09);}
+
+.prc{transition:transform .26s cubic-bezier(.4,0,.2,1),box-shadow .26s cubic-bezier(.4,0,.2,1),border-color .26s;}
+.prc:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(0,0,0,.08);}
+.prc.pro:hover{box-shadow:0 16px 40px rgba(196,149,106,.17);}
+
+/* Button refinements */
+.btn-p{transition:opacity .18s,transform .2s cubic-bezier(.4,0,.2,1),box-shadow .2s;}
+.btn-p:hover{opacity:.9;transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.17);}
+.btn-g:hover{border-color:var(--ac);color:var(--ac);background:rgba(91,138,148,.04);}
+.nav-cta{transition:opacity .18s,transform .15s,box-shadow .18s;}
+.nav-cta:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.16);}
+.prc-btn{transition:opacity .18s,transform .15s,box-shadow .15s;}
+.prc-btn:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.13);}
+.prc-btn.ghost:hover{border-color:var(--ac);color:var(--ac);background:rgba(91,138,148,.04);transform:none;box-shadow:none;}
+.waitlist-btn{transition:opacity .18s,transform .15s,box-shadow .18s;}
+.waitlist-btn:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,0,0,.14);}
+.waitlist-input:focus{border-color:var(--ac);box-shadow:0 0 0 3px rgba(91,138,148,.14);}
+
+/* Trust bar item hover */
+.ti{transition:color .18s,transform .18s;}
+.ti:hover{color:var(--ac);transform:translateY(-1px);}
+
+/* Respect prefers-reduced-motion */
+@media(prefers-reduced-motion:reduce){
+  *{transition-duration:.01ms!important;animation-duration:.01ms!important;}
+  .reveal{transform:none!important;}
+}
 </style>
 </head>
 <body>
