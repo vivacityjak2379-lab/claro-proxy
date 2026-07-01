@@ -1,15 +1,54 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 const { Pool } = require('pg');
 const app = express();
 const PORT = process.env.PORT || 8080;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const PUBLIC_URL = 'https://grand-respect-production-f3b0.up.railway.app';
+const APP_URL = 'https://speakclaro.co';
 
 if (!ADMIN_PASSWORD) {
   console.error('FATAL: ADMIN_PASSWORD environment variable is not set. Refusing to start.');
   process.exit(1);
+}
+
+// ─── MAIL ────────────────────────────────────────────────────────────────────
+
+const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env;
+
+let mailer = null;
+if (SMTP_HOST && SMTP_PORT && SMTP_USER && SMTP_PASS && SMTP_FROM) {
+  mailer = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: Number(SMTP_PORT),
+    secure: Number(SMTP_PORT) === 465,
+    auth: { user: SMTP_USER, pass: SMTP_PASS },
+  });
+} else {
+  console.warn('SMTP not configured — verification emails will not be sent');
+}
+
+async function sendVerificationEmail(email, token) {
+  if (!mailer) {
+    console.warn('Skipping verification email (SMTP not configured):', email);
+    return;
+  }
+  const verifyUrl = `${PUBLIC_URL}/auth/verify?token=${token}`;
+  try {
+    await mailer.sendMail({
+      from: SMTP_FROM,
+      to: email,
+      subject: 'Verify your Claro email',
+      text: `Confirm your email to finish setting up Claro:\n\n${verifyUrl}`,
+      html: `<p>Confirm your email to finish setting up Claro:</p><p><a href="${verifyUrl}">${verifyUrl}</a></p>`,
+    });
+  } catch (err) {
+    console.error('Failed to send verification email:', err.message);
+  }
 }
 
 // ─── DATABASE ────────────────────────────────────────────────────────────────
@@ -35,6 +74,8 @@ async function initDB() {
     )
   `);
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT FALSE`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_token TEXT`);
   console.log('✓ DB ready');
 }
 
@@ -55,7 +96,7 @@ function isValidUid(uid) {
 
 function redact(user) {
   if (!user) return user;
-  const { password_hash, ...safe } = user;
+  const { password_hash, verification_token, ...safe } = user;
   return safe;
 }
 
@@ -109,10 +150,14 @@ app.post('/v1/messages', async (req, res) => {
 
   // Resolve plan from DB (falls back to 'free' if uid unknown or DB error)
   let userPlan = 'free';
+  let needsEmailVerification = false;
   if (uid) {
     try {
       const user = await getUser(uid);
-      if (user) userPlan = user.plan;
+      if (user) {
+        userPlan = user.plan;
+        needsEmailVerification = !!user.email && !user.email_verified;
+      }
     } catch (e) {
       console.error('DB plan check failed:', e.message);
     }
@@ -142,6 +187,7 @@ app.post('/v1/messages', async (req, res) => {
       body: JSON.stringify(req.body),
     });
     const data = await response.json();
+    if (needsEmailVerification) data.claro = { emailVerified: false };
     res.status(response.status).json(data);
   } catch (err) {
     res.status(500).json({ error: { message: err.message } });
@@ -294,24 +340,53 @@ app.post('/auth/register', async (req, res) => {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
+    const verificationToken = crypto.randomBytes(32).toString('hex');
 
     if (!existing) {
       await pool.query(
-        "INSERT INTO users (uid, plan, email, password_hash) VALUES ($1, 'free', $2, $3)",
-        [uid, email, passwordHash]
+        "INSERT INTO users (uid, plan, email, password_hash, email_verified, verification_token) VALUES ($1, 'free', $2, $3, FALSE, $4)",
+        [uid, email, passwordHash, verificationToken]
       );
     } else {
       await pool.query(
-        'UPDATE users SET email = $1, password_hash = $2, updated_at = NOW() WHERE uid = $3',
-        [email, passwordHash, uid]
+        'UPDATE users SET email = $1, password_hash = $2, email_verified = FALSE, verification_token = $3, updated_at = NOW() WHERE uid = $4',
+        [email, passwordHash, verificationToken, uid]
       );
     }
 
+    await sendVerificationEmail(email, verificationToken);
+
     const user = await getUser(uid);
-    res.json({ ok: true, uid: user.uid, email: user.email, plan: user.plan });
+    res.json({ ok: true, uid: user.uid, email: user.email, plan: user.plan, emailVerified: user.email_verified });
   } catch (err) {
     console.error('/auth/register error:', err.message);
     res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/auth/verify', async (req, res) => {
+  const { token } = req.query;
+  if (!token || typeof token !== 'string') {
+    return res.redirect(`${APP_URL}/app.html?verified=false`);
+  }
+
+  try {
+    const { rows } = await pool.query(
+      'SELECT uid FROM users WHERE verification_token = $1',
+      [token]
+    );
+    if (rows.length === 0) {
+      return res.redirect(`${APP_URL}/app.html?verified=false`);
+    }
+
+    await pool.query(
+      'UPDATE users SET email_verified = TRUE, verification_token = NULL, updated_at = NOW() WHERE uid = $1',
+      [rows[0].uid]
+    );
+    res.redirect(`${APP_URL}/app.html?verified=true`);
+  } catch (err) {
+    console.error('/auth/verify error:', err.message);
+    res.redirect(`${APP_URL}/app.html?verified=false`);
   }
 });
 

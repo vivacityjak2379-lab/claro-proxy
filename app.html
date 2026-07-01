@@ -1952,6 +1952,12 @@ document.addEventListener('keydown',function(e){
     setTimeout(showProCelebration, 800);
   }
 
+  // Check email verification return
+  if(params.get('verified')==='true'){
+    history.replaceState(null,'',window.location.pathname);
+    setTimeout(function(){ toast('Email verified ✦ Welcome to Claro'); }, 800);
+  }
+
   buildCompanions();
   buildMoodGrid();
   updateUI();
