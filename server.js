@@ -5,7 +5,12 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'claro-admin-2026';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
+if (!ADMIN_PASSWORD) {
+  console.error('FATAL: ADMIN_PASSWORD environment variable is not set. Refusing to start.');
+  process.exit(1);
+}
 
 // ─── DATABASE ────────────────────────────────────────────────────────────────
 
@@ -42,6 +47,10 @@ async function getUser(uid) {
 
 function isValidEmail(email) {
   return typeof email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function isValidUid(uid) {
+  return typeof uid === 'string' && /^[A-Za-z0-9_.-]{1,128}$/.test(uid);
 }
 
 function redact(user) {
@@ -142,18 +151,20 @@ app.post('/v1/messages', async (req, res) => {
 // ─── STRIPE WEBHOOK ──────────────────────────────────────────────────────────
 
 app.post('/webhook', async (req, res) => {
+  // Fail closed: never fall back to parsing an unsigned event body.
+  if (!STRIPE_WEBHOOK_SECRET) {
+    console.error('Webhook rejected: STRIPE_WEBHOOK_SECRET is not configured');
+    return res.status(500).send('Webhook not configured');
+  }
+
   let event;
   try {
-    if (STRIPE_WEBHOOK_SECRET) {
-      const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-      event = stripe.webhooks.constructEvent(
-        req.body,
-        req.headers['stripe-signature'],
-        STRIPE_WEBHOOK_SECRET
-      );
-    } else {
-      event = JSON.parse(req.body);
-    }
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    event = stripe.webhooks.constructEvent(
+      req.body,
+      req.headers['stripe-signature'],
+      STRIPE_WEBHOOK_SECRET
+    );
   } catch (err) {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
@@ -220,7 +231,8 @@ app.get('/check-plan/:uid', async (req, res) => {
 app.post('/register', async (req, res) => {
   const { uid, email } = req.body;
   // plan is intentionally ignored from client — only Stripe webhook sets plan='pro'
-  if (!uid) return res.status(400).json({ error: 'uid required' });
+  if (!isValidUid(uid)) return res.status(400).json({ error: 'Valid uid required' });
+  if (email && !isValidEmail(email)) return res.status(400).json({ error: 'Invalid email' });
 
   try {
     const existing = await getUser(uid);
@@ -250,7 +262,7 @@ app.post('/register', async (req, res) => {
 // chat access, which keeps working off the uid alone (see /v1/messages).
 
 app.post('/auth/register', async (req, res) => {
-  const { uid, email, password } = req.body;
+  const { uid, email, password, currentPassword } = req.body;
 
   if (!uid) return res.status(400).json({ error: 'uid required' });
   if (!isValidEmail(email)) return res.status(400).json({ error: 'Valid email required' });
@@ -267,8 +279,21 @@ app.post('/auth/register', async (req, res) => {
       return res.status(409).json({ error: 'Email already registered. Try logging in instead.' });
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
     const existing = await getUser(uid);
+
+    // If this uid already has credentials, require proof of ownership before
+    // replacing them — otherwise anyone who learns the uid could hijack the account.
+    if (existing && existing.password_hash) {
+      if (!currentPassword) {
+        return res.status(401).json({ error: 'Current password required to update this account' });
+      }
+      const ownsAccount = await bcrypt.compare(currentPassword, existing.password_hash);
+      if (!ownsAccount) {
+        return res.status(401).json({ error: 'Current password is incorrect' });
+      }
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
 
     if (!existing) {
       await pool.query(

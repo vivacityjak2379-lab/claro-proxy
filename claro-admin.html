@@ -181,6 +181,10 @@ function fmtDate(v) {
   return v ? String(v).slice(0,19).replace('T',' ') : '—';
 }
 
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 function renderTable(users) {
   const el = document.getElementById('usersTable');
   if (!users.length) {
@@ -189,18 +193,27 @@ function renderTable(users) {
   }
   el.innerHTML = users.map(u => `
     <div class="table-row">
-      <div class="tr-email">${u.email || '—'}</div>
-      <div><span class="tr-plan ${u.plan}">${u.plan.toUpperCase()}</span></div>
-      <div class="tr-date">${fmtDate(u.created_at)}</div>
-      <div class="tr-date">${fmtDate(u.updated_at)}</div>
-      <div class="tr-uid">${u.uid}</div>
+      <div class="tr-email">${esc(u.email || '—')}</div>
+      <div><span class="tr-plan ${u.plan === 'pro' ? 'pro' : 'free'}">${esc(u.plan.toUpperCase())}</span></div>
+      <div class="tr-date">${esc(fmtDate(u.created_at))}</div>
+      <div class="tr-date">${esc(fmtDate(u.updated_at))}</div>
+      <div class="tr-uid">${esc(u.uid)}</div>
       <div class="tr-actions">
-        <button class="plan-btn pro ${u.plan === 'pro' ? 'active' : ''}" ${u.plan === 'pro' ? 'disabled' : ''} onclick="setPlan('${u.uid}','pro')">Set Pro</button>
-        <button class="plan-btn free ${u.plan === 'free' ? 'active' : ''}" ${u.plan === 'free' ? 'disabled' : ''} onclick="setPlan('${u.uid}','free')">Set Free</button>
+        <button class="plan-btn pro ${u.plan === 'pro' ? 'active' : ''}" ${u.plan === 'pro' ? 'disabled' : ''} data-uid="${esc(u.uid)}" data-plan="pro">Set Pro</button>
+        <button class="plan-btn free ${u.plan === 'free' ? 'active' : ''}" ${u.plan === 'free' ? 'disabled' : ''} data-uid="${esc(u.uid)}" data-plan="free">Set Free</button>
       </div>
     </div>
   `).join('');
 }
+
+// Delegated listener instead of inline onclick: an HTML-escaped value can still
+// break out of an inline event-handler attribute once the browser decodes
+// entities before compiling it as JS, so uid is passed via data-* instead.
+document.getElementById('usersTable').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-uid]');
+  if (!btn || btn.disabled) return;
+  setPlan(btn.dataset.uid, btn.dataset.plan);
+});
 
 function filterUsers() {
   const q = document.getElementById('searchInput').value.toLowerCase();
