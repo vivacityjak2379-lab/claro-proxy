@@ -1,13 +1,14 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
 const { Pool } = require('pg');
 const app = express();
 const PORT = process.env.PORT || 8080;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const RESEND_FROM = process.env.RESEND_FROM || 'Claro <noreply@speakclaro.co>';
 const PUBLIC_URL = 'https://grand-respect-production-f3b0.up.railway.app';
 const APP_URL = 'https://speakclaro.co';
 
@@ -16,38 +17,38 @@ if (!ADMIN_PASSWORD) {
   process.exit(1);
 }
 
-// ─── MAIL ────────────────────────────────────────────────────────────────────
+// ─── MAIL (Resend HTTP API — Railway blocks outbound SMTP ports) ────────────
 
-const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env;
-
-let mailer = null;
-if (SMTP_HOST && SMTP_PORT && SMTP_USER && SMTP_PASS && SMTP_FROM) {
-  mailer = nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: Number(SMTP_PORT),
-    secure: Number(SMTP_PORT) === 465,
-    auth: { user: SMTP_USER, pass: SMTP_PASS },
-  });
-} else {
-  console.warn('SMTP not configured — verification emails will not be sent');
+if (!RESEND_API_KEY) {
+  console.warn('RESEND_API_KEY not configured — verification emails will not be sent');
 }
 
 async function sendVerificationEmail(email, token) {
-  if (!mailer) {
-    console.warn('Skipping verification email (SMTP not configured):', email);
+  if (!RESEND_API_KEY) {
+    console.warn('Skipping verification email (RESEND_API_KEY not configured):', email);
     return;
   }
   const verifyUrl = `${PUBLIC_URL}/auth/verify?token=${token}`;
   try {
-    await mailer.sendMail({
-      from: SMTP_FROM,
-      to: email,
-      subject: 'Verify your Claro email',
-      text: `Confirm your email to finish setting up Claro:\n\n${verifyUrl}`,
-      html: `<p>Confirm your email to finish setting up Claro:</p><p><a href="${verifyUrl}">${verifyUrl}</a></p>`,
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: RESEND_FROM,
+        to: email,
+        subject: 'Verify your Claro account',
+        html: `<p>Welcome to Claro ✦</p><p>Click below to verify your email:</p><p><a href="${verifyUrl}">Verify email</a></p>`,
+      }),
     });
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      console.error(`Resend API error sending to ${email}: status=${res.status} body=${body}`);
+    }
   } catch (err) {
-    console.error('Failed to send verification email:', err.message);
+    console.error(`Failed to send verification email to ${email}:`, err.message);
   }
 }
 
@@ -354,7 +355,9 @@ app.post('/auth/register', async (req, res) => {
       );
     }
 
-    await sendVerificationEmail(email, verificationToken);
+    // Fire-and-forget: never let email delivery (or a slow/blocked provider)
+    // hang the registration response — this was the root cause of the hang.
+    sendVerificationEmail(email, verificationToken);
 
     const user = await getUser(uid);
     res.json({ ok: true, uid: user.uid, email: user.email, plan: user.plan, emailVerified: user.email_verified });
@@ -387,6 +390,43 @@ app.get('/auth/verify', async (req, res) => {
   } catch (err) {
     console.error('/auth/verify error:', err.message);
     res.redirect(`${APP_URL}/app.html?verified=false`);
+  }
+});
+
+const resendCooldown = {};
+const RESEND_COOLDOWN_MS = 60 * 1000;
+
+app.post('/auth/resend', async (req, res) => {
+  const { uid } = req.body;
+  if (!uid) return res.status(400).json({ error: 'uid required' });
+
+  try {
+    const user = await getUser(uid);
+    if (!user || !user.email) {
+      return res.status(404).json({ error: 'No account found for this device' });
+    }
+    if (user.email_verified) {
+      return res.json({ ok: true, alreadyVerified: true });
+    }
+
+    const now = Date.now();
+    if (resendCooldown[uid] && now < resendCooldown[uid]) {
+      const waitSec = Math.ceil((resendCooldown[uid] - now) / 1000);
+      return res.status(429).json({ error: `Please wait ${waitSec}s before requesting another email` });
+    }
+    resendCooldown[uid] = now + RESEND_COOLDOWN_MS;
+
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    await pool.query(
+      'UPDATE users SET verification_token = $1, updated_at = NOW() WHERE uid = $2',
+      [verificationToken, uid]
+    );
+    sendVerificationEmail(user.email, verificationToken);
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('/auth/resend error:', err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
