@@ -536,28 +536,97 @@ kbd{background:var(--s2);border:1px solid var(--bd);border-radius:4px;padding:1p
   </div>
 </div>
 
-<!-- SETTINGS OVERLAY -->
+<!-- PROFILE OVERLAY -->
 <div id="settOverlay" style="position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;">
-  <div style="background:var(--sf);border-radius:20px;padding:2rem;max-width:400px;width:90%;max-height:80vh;overflow-y:auto;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
-      <div style="font-family:'Cormorant Garamond',serif;font-size:22px;">Settings</div>
+  <div style="background:var(--sf);border-radius:20px;padding:2rem;max-width:400px;width:90%;max-height:85vh;overflow-y:auto;transform:scale(.96);opacity:0;transition:transform .25s ease,opacity .25s ease;" id="profModalBox">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--tx);">Profile</div>
       <button onclick="closeSettings()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--t2);">✕</button>
     </div>
-    <div style="margin-bottom:1rem;">
-      <label style="font-size:12px;color:var(--t3);display:block;margin-bottom:.35rem;">Your name</label>
-      <input id="settName" type="text" placeholder="How should Claro call you?" style="width:100%;padding:.7rem .9rem;border:1.5px solid var(--bd);border-radius:10px;font-size:14px;background:var(--bg);color:var(--tx);outline:none;font-family:'DM Sans',sans-serif;"/>
+
+    <div style="display:flex;gap:1.25rem;border-bottom:1px solid var(--bd);margin-bottom:1.25rem;">
+      <button class="prof-tab" id="profTabBtn-profile" onclick="switchProfTab('profile')" style="background:none;border:none;border-bottom:2px solid var(--ac);padding:0 0 .6rem;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--tx);cursor:pointer;">Profile</button>
+      <button class="prof-tab" id="profTabBtn-subscription" onclick="switchProfTab('subscription')" style="background:none;border:none;border-bottom:2px solid transparent;padding:0 0 .6rem;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--t2);cursor:pointer;">Subscription</button>
+      <button class="prof-tab" id="profTabBtn-account" onclick="switchProfTab('account')" style="background:none;border:none;border-bottom:2px solid transparent;padding:0 0 .6rem;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--t2);cursor:pointer;">Account</button>
     </div>
-    <div style="margin-bottom:1rem;">
-      <label style="font-size:12px;color:var(--t3);display:block;margin-bottom:.35rem;">Language</label>
-      <select id="settLang" style="width:100%;padding:.7rem .9rem;border:1.5px solid var(--bd);border-radius:10px;font-size:14px;background:var(--bg);color:var(--tx);outline:none;cursor:pointer;">
-        <option value="en">English</option>
-        <option value="ru">Русский</option>
-        <option value="es">Español</option>
-        <option value="fr">Français</option>
-      </select>
+
+    <!-- PROFILE TAB -->
+    <div id="profTab-profile">
+      <div style="margin-bottom:1rem;">
+        <label style="font-size:12px;color:var(--t3);display:block;margin-bottom:.35rem;">Your name</label>
+        <input id="settName" type="text" placeholder="How should Claro call you?" style="width:100%;padding:.7rem .9rem;border:1.5px solid var(--bd);border-radius:10px;font-size:14px;background:var(--bg);color:var(--tx);outline:none;font-family:'DM Sans',sans-serif;"/>
+      </div>
+      <div style="margin-bottom:1rem;">
+        <label style="font-size:12px;color:var(--t3);display:block;margin-bottom:.35rem;">Language</label>
+        <select id="settLang" style="width:100%;padding:.7rem .9rem;border:1.5px solid var(--bd);border-radius:10px;font-size:14px;background:var(--bg);color:var(--tx);outline:none;cursor:pointer;">
+          <option value="en">English</option>
+          <option value="ru">Русский</option>
+          <option value="es">Español</option>
+          <option value="fr">Français</option>
+        </select>
+      </div>
+      <button onclick="saveSettings()" style="width:100%;padding:.82rem;border-radius:50px;background:var(--tx);color:var(--sf);border:none;font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;">Save</button>
+
+      <div style="margin-top:1.25rem;padding-top:1.1rem;border-top:1px solid var(--bd);">
+        <div id="profEmailRow" style="display:none;">
+          <label style="font-size:12px;color:var(--t3);display:block;margin-bottom:.35rem;">Email</label>
+          <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap;">
+            <span id="profEmailText" style="font-size:14px;color:var(--tx);"></span>
+            <span id="profVerifiedBadge" style="font-size:11px;padding:2px 9px;border-radius:20px;"></span>
+          </div>
+          <button id="profResendBtn" onclick="resendVerificationEmail('profResendBtn')" style="display:none;padding:.5rem 1rem;border-radius:20px;border:1.5px solid var(--ac);background:transparent;color:var(--ac);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:1rem;">Resend verification</button>
+
+          <button onclick="toggleChangePassword()" style="width:100%;padding:.7rem;border-radius:50px;background:transparent;color:var(--ac);border:1.5px solid var(--ac);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;">Change password</button>
+          <div id="profPasswordForm" style="display:none;margin-top:.75rem;">
+            <input id="profCurPwd" type="password" placeholder="Current password" style="width:100%;padding:.65rem .9rem;border:1.5px solid var(--bd);border-radius:10px;font-size:13px;background:var(--bg);color:var(--tx);outline:none;font-family:'DM Sans',sans-serif;margin-bottom:.5rem;"/>
+            <input id="profNewPwd" type="password" placeholder="New password" style="width:100%;padding:.65rem .9rem;border:1.5px solid var(--bd);border-radius:10px;font-size:13px;background:var(--bg);color:var(--tx);outline:none;font-family:'DM Sans',sans-serif;margin-bottom:.5rem;"/>
+            <div id="profPwdError" style="font-size:12px;color:#b04040;min-height:16px;margin-bottom:.4rem;"></div>
+            <button onclick="changePassword()" style="width:100%;padding:.65rem;border-radius:50px;background:var(--tx);color:var(--sf);border:none;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;">Update password</button>
+          </div>
+        </div>
+        <div id="profNoEmailRow" style="display:none;">
+          <div style="font-size:13px;color:var(--t2);line-height:1.5;margin-bottom:.75rem;">Create an account to save your progress across devices.</div>
+          <button onclick="openSignUpFromProfile()" style="width:100%;padding:.7rem;border-radius:50px;background:transparent;color:var(--ac);border:1.5px solid var(--ac);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;">Create account</button>
+        </div>
+      </div>
     </div>
-    <button onclick="saveSettings()" style="width:100%;padding:.82rem;border-radius:50px;background:var(--tx);color:var(--sf);border:none;font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:.5rem;">Save</button>
-    <button onclick="if(confirm('Clear all data?'))clearAll()" style="width:100%;padding:.7rem;border-radius:50px;background:transparent;color:#b04040;border:1px solid #b04040;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:.75rem;">Reset & start over</button>
+
+    <!-- SUBSCRIPTION TAB -->
+    <div id="profTab-subscription" style="display:none;">
+      <div style="text-align:center;padding:.5rem 0 1.25rem;">
+        <div id="profPlanBadge" style="display:inline-block;padding:.45rem 1.25rem;border-radius:20px;font-family:'Cormorant Garamond',serif;font-size:22px;"></div>
+      </div>
+      <div id="profFreeBlock" style="display:none;">
+        <button onclick="goUpgrade()" style="width:100%;padding:.85rem;border-radius:50px;background:var(--gd);color:#fff;border:none;font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;">Upgrade to Pro →</button>
+      </div>
+      <div id="profProBlock" style="display:none;">
+        <div style="font-size:13px;color:var(--t2);text-align:center;margin-bottom:1.25rem;">Pro plan active</div>
+        <button onclick="toggleCancelSub()" style="width:100%;padding:.7rem;border-radius:50px;background:transparent;color:#b04040;border:1px solid #b04040;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;">Cancel subscription</button>
+        <div id="cancelSubForm" style="display:none;margin-top:.75rem;">
+          <input id="cancelSubEmail" type="email" placeholder="Your account email" style="width:100%;padding:.65rem .9rem;border:1.5px solid var(--bd);border-radius:10px;font-size:13px;background:var(--bg);color:var(--tx);outline:none;font-family:'DM Sans',sans-serif;margin-bottom:.5rem;"/>
+          <input id="cancelSubPwd" type="password" placeholder="Password" style="width:100%;padding:.65rem .9rem;border:1.5px solid var(--bd);border-radius:10px;font-size:13px;background:var(--bg);color:var(--tx);outline:none;font-family:'DM Sans',sans-serif;margin-bottom:.5rem;"/>
+          <div id="cancelSubError" style="font-size:12px;color:#b04040;min-height:16px;margin-bottom:.4rem;"></div>
+          <button onclick="confirmCancelSubscription()" style="width:100%;padding:.65rem;border-radius:50px;background:#b04040;color:#fff;border:none;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;">Confirm cancellation</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACCOUNT TAB -->
+    <div id="profTab-account" style="display:none;">
+      <button onclick="signOut()" style="width:100%;padding:.85rem;border-radius:50px;background:transparent;color:var(--ac);border:1.5px solid var(--ac);font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:1.5rem;">Sign out</button>
+
+      <div style="border-top:1px solid var(--bd);padding-top:1rem;">
+        <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);margin-bottom:.75rem;">Danger zone</div>
+        <button onclick="if(confirm('Clear all data?'))clearAll()" style="width:100%;padding:.7rem;border-radius:50px;background:transparent;color:var(--t2);border:1px solid var(--bd);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:.6rem;">Reset & start over</button>
+        <button onclick="toggleDeleteAccount()" style="width:100%;padding:.7rem;border-radius:50px;background:transparent;color:#b04040;border:1px solid #b04040;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;">Delete my account</button>
+        <div id="deleteAccountForm" style="display:none;margin-top:.75rem;">
+          <div style="font-size:12px;color:var(--t2);line-height:1.5;margin-bottom:.6rem;">This removes your account and Pro access. Your data stays on file — contact support to restore it.</div>
+          <input id="deleteAccountPwd" type="password" placeholder="Password" style="width:100%;padding:.65rem .9rem;border:1.5px solid var(--bd);border-radius:10px;font-size:13px;background:var(--bg);color:var(--tx);outline:none;font-family:'DM Sans',sans-serif;margin-bottom:.5rem;"/>
+          <div id="deleteAccountError" style="font-size:12px;color:#b04040;min-height:16px;margin-bottom:.4rem;"></div>
+          <button onclick="confirmDeleteAccount()" style="width:100%;padding:.65rem;border-radius:50px;background:#b04040;color:#fff;border:none;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;">Confirm delete</button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1364,6 +1433,7 @@ function updateAuthUI(){
 
 function signOut(){
   localStorage.removeItem('claro_email');
+  localStorage.removeItem('claro_email_verified');
   localStorage.removeItem('claro_plan');
   plan = 'free';
   updateUI();
@@ -1509,6 +1579,7 @@ async function authSignup(){
     authSetLoading(false);
     if(!res.ok){ errEl.textContent = data.error || 'Something went wrong.'; return; }
     localStorage.setItem('claro_email', data.email);
+    localStorage.setItem('claro_email_verified', data.emailVerified ? '1' : '0');
     if(data.plan){ plan = data.plan; localStorage.setItem('claro_plan', data.plan); updateUI(); }
     updateAuthUI();
     showCheckEmailScreen(data.email);
@@ -1538,10 +1609,10 @@ function authContinueAfterSignup(){
 }
 
 let _resendCooldownUntil = 0;
-async function resendVerificationEmail(){
-  const btn = document.getElementById('authResendBtn');
+async function resendVerificationEmail(btnId){
+  const btn = document.getElementById(btnId || 'authResendBtn');
   if(Date.now() < _resendCooldownUntil) return;
-  btn.disabled = true;
+  if(btn) btn.disabled = true;
   try{
     const res = await fetch(PROXY_URL+'/auth/resend',{
       method:'POST',
@@ -1553,6 +1624,7 @@ async function resendVerificationEmail(){
       toast(data.error || 'Could not resend email.');
     } else if(data.alreadyVerified){
       toast('Email already verified');
+      localStorage.setItem('claro_email_verified','1');
     } else {
       toast('Verification email sent');
       _resendCooldownUntil = Date.now() + 60000;
@@ -1560,7 +1632,7 @@ async function resendVerificationEmail(){
   }catch(e){
     toast('Network error. Try again.');
   }
-  setTimeout(function(){ btn.disabled = false; }, 3000);
+  if(btn) setTimeout(function(){ btn.disabled = false; }, 3000);
 }
 
 async function authLogin(){
@@ -1582,6 +1654,7 @@ async function authLogin(){
     USER_ID = data.uid;
     localStorage.setItem('claro_uid', data.uid);
     localStorage.setItem('claro_email', data.email);
+    localStorage.setItem('claro_email_verified', data.emailVerified ? '1' : '0');
     plan = data.plan;
     localStorage.setItem('claro_plan', data.plan);
     updateUI();
@@ -1642,29 +1715,221 @@ function closePro(){
   }
 }
 
-// ═══ SETTINGS ═══
+// ═══ PROFILE MODAL ═══
 function openSettings(){
   const overlay = document.getElementById('settOverlay');
+  const box = document.getElementById('profModalBox');
   if(!overlay) return;
   const nameInp = document.getElementById('settName');
   const langSel = document.getElementById('settLang');
   if(nameInp) nameInp.value = userName;
   if(langSel) langSel.value = lang;
+
+  populateProfileTab();
+  populateSubscriptionTab();
+  switchProfTab('profile');
+
   overlay.style.display = 'flex';
+  requestAnimationFrame(function(){
+    if(box){ box.style.transform = 'scale(1)'; box.style.opacity = '1'; }
+  });
 }
 
 function closeSettings(){
-  document.getElementById('settOverlay').style.display = 'none';
+  const overlay = document.getElementById('settOverlay');
+  const box = document.getElementById('profModalBox');
+  if(box){ box.style.transform = 'scale(.96)'; box.style.opacity = '0'; }
+  setTimeout(function(){ if(overlay) overlay.style.display = 'none'; }, 200);
+}
+
+function switchProfTab(tab){
+  ['profile','subscription','account'].forEach(function(t){
+    const content = document.getElementById('profTab-'+t);
+    const btn = document.getElementById('profTabBtn-'+t);
+    if(content) content.style.display = (t === tab) ? '' : 'none';
+    if(btn){
+      btn.style.color = (t === tab) ? 'var(--tx)' : 'var(--t2)';
+      btn.style.borderBottomColor = (t === tab) ? 'var(--ac)' : 'transparent';
+    }
+  });
+}
+
+function populateProfileTab(){
+  const email = localStorage.getItem('claro_email');
+  const verified = localStorage.getItem('claro_email_verified') === '1';
+  const emailRow = document.getElementById('profEmailRow');
+  const noEmailRow = document.getElementById('profNoEmailRow');
+  const badge = document.getElementById('profVerifiedBadge');
+  const resendBtn = document.getElementById('profResendBtn');
+
+  if(email){
+    if(emailRow) emailRow.style.display = '';
+    if(noEmailRow) noEmailRow.style.display = 'none';
+    document.getElementById('profEmailText').textContent = email;
+    if(badge){
+      if(verified){
+        badge.textContent = '✓ Verified';
+        badge.style.background = 'var(--al)';
+        badge.style.color = 'var(--ac)';
+      } else {
+        badge.textContent = '⚠ Not verified';
+        badge.style.background = 'var(--gl)';
+        badge.style.color = 'var(--gd)';
+      }
+    }
+    if(resendBtn) resendBtn.style.display = verified ? 'none' : '';
+  } else {
+    if(emailRow) emailRow.style.display = 'none';
+    if(noEmailRow) noEmailRow.style.display = '';
+  }
+
+  document.getElementById('profPasswordForm').style.display = 'none';
+  document.getElementById('profCurPwd').value = '';
+  document.getElementById('profNewPwd').value = '';
+  document.getElementById('profPwdError').textContent = '';
+}
+
+function populateSubscriptionTab(){
+  const badge = document.getElementById('profPlanBadge');
+  const freeBlock = document.getElementById('profFreeBlock');
+  const proBlock = document.getElementById('profProBlock');
+  const isPro = plan === 'pro';
+
+  if(badge){
+    badge.textContent = isPro ? 'Pro' : 'Free';
+    badge.style.background = isPro ? 'var(--gl)' : 'var(--s2)';
+    badge.style.color = isPro ? 'var(--gd)' : 'var(--t2)';
+  }
+  if(freeBlock) freeBlock.style.display = isPro ? 'none' : '';
+  if(proBlock) proBlock.style.display = isPro ? '' : 'none';
+
+  document.getElementById('cancelSubForm').style.display = 'none';
+  document.getElementById('cancelSubEmail').value = localStorage.getItem('claro_email') || '';
+  document.getElementById('cancelSubPwd').value = '';
+  document.getElementById('cancelSubError').textContent = '';
 }
 
 function saveSettings(){
   const nameInp = document.getElementById('settName');
   const langSel = document.getElementById('settLang');
-  if(nameInp){ userName = nameInp.value.trim(); localStorage.setItem('claro_name', userName); }
+  const name = nameInp ? nameInp.value.trim() : '';
+  if(nameInp){ userName = name; localStorage.setItem('claro_name', userName); }
   if(langSel){ lang = langSel.value; localStorage.setItem('claro_lang', lang); }
   updateUI();
   closeSettings();
   toast('Settings saved');
+
+  if(name){
+    fetch(PROXY_URL+'/auth/profile',{
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({uid:USER_ID, displayName:name})
+    }).catch(function(){});
+  }
+}
+
+function toggleChangePassword(){
+  const form = document.getElementById('profPasswordForm');
+  form.style.display = (form.style.display === 'none') ? '' : 'none';
+}
+
+async function changePassword(){
+  const cur = document.getElementById('profCurPwd').value;
+  const next = document.getElementById('profNewPwd').value;
+  const errEl = document.getElementById('profPwdError');
+  errEl.textContent = '';
+  if(!cur || !next){ errEl.textContent = 'Enter your current and new password.'; return; }
+  if(next.length < 6){ errEl.textContent = 'New password must be at least 6 characters.'; return; }
+
+  try{
+    const res = await fetch(PROXY_URL+'/auth/password',{
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({uid:USER_ID, currentPassword:cur, newPassword:next})
+    });
+    const data = await res.json().catch(function(){ return {}; });
+    if(!res.ok){ errEl.textContent = data.error || 'Something went wrong.'; return; }
+    toast('Password updated');
+    document.getElementById('profPasswordForm').style.display = 'none';
+    document.getElementById('profCurPwd').value = '';
+    document.getElementById('profNewPwd').value = '';
+  }catch(e){
+    errEl.textContent = 'Network error. Try again.';
+  }
+}
+
+function openSignUpFromProfile(){
+  closeSettings();
+  setAuthMode('signup');
+  _authResolve = function(){ updateAuthUI(); syncPlanFromServer(); };
+  document.getElementById('authError').textContent = '';
+  document.getElementById('authEmail').value = '';
+  document.getElementById('authPassword').value = '';
+  const ov = document.getElementById('authOverlay');
+  ov.style.display = 'flex';
+  ov.style.opacity = '0';
+  requestAnimationFrame(function(){
+    ov.style.transition = 'opacity .4s';
+    ov.style.opacity = '1';
+  });
+}
+
+function toggleCancelSub(){
+  const form = document.getElementById('cancelSubForm');
+  form.style.display = (form.style.display === 'none') ? '' : 'none';
+}
+
+async function confirmCancelSubscription(){
+  const email = document.getElementById('cancelSubEmail').value.trim();
+  const password = document.getElementById('cancelSubPwd').value;
+  const errEl = document.getElementById('cancelSubError');
+  errEl.textContent = '';
+  if(!email){ errEl.textContent = 'Enter your account email.'; return; }
+  if(!confirm('Cancel your Pro subscription?')) return;
+
+  try{
+    const res = await fetch(PROXY_URL+'/auth/cancel-subscription',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({uid:USER_ID, email, password})
+    });
+    const data = await res.json().catch(function(){ return {}; });
+    if(!res.ok){ errEl.textContent = data.error || 'Something went wrong.'; return; }
+    plan = 'free';
+    localStorage.setItem('claro_plan','free');
+    updateUI();
+    populateSubscriptionTab();
+    toast('Subscription cancelled');
+  }catch(e){
+    errEl.textContent = 'Network error. Try again.';
+  }
+}
+
+function toggleDeleteAccount(){
+  const form = document.getElementById('deleteAccountForm');
+  form.style.display = (form.style.display === 'none') ? '' : 'none';
+}
+
+async function confirmDeleteAccount(){
+  const password = document.getElementById('deleteAccountPwd').value;
+  const errEl = document.getElementById('deleteAccountError');
+  errEl.textContent = '';
+  if(!confirm('Delete your account? This cannot be undone from here.')) return;
+
+  try{
+    const res = await fetch(PROXY_URL+'/auth/account',{
+      method:'DELETE',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({uid:USER_ID, password})
+    });
+    const data = await res.json().catch(function(){ return {}; });
+    if(!res.ok){ errEl.textContent = data.error || 'Something went wrong.'; return; }
+    closeSettings();
+    signOut();
+    toast('Account deleted');
+  }catch(e){
+    errEl.textContent = 'Network error. Try again.';
+  }
 }
 
 function clearAll(){
@@ -2003,6 +2268,7 @@ document.addEventListener('keydown',function(e){
 
   // Check email verification return
   if(params.get('verified')==='true'){
+    localStorage.setItem('claro_email_verified','1');
     history.replaceState(null,'',window.location.pathname);
     setTimeout(function(){ toast('Email verified ✦ Welcome to Claro'); }, 800);
   }

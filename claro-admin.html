@@ -42,22 +42,28 @@ body{font-family:'DM Sans',sans-serif;background:#111214;color:#E8E5DF;min-heigh
 
 /* USERS TABLE */
 .table-wrap{background:#17191C;border:1px solid #1E2226;border-radius:14px;overflow:hidden;overflow-x:auto;}
-.table-header{padding:.75rem 1.1rem;border-bottom:1px solid #1E2226;display:grid;grid-template-columns:2fr 70px 110px 110px 1fr 170px;gap:1rem;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#44484F;min-width:760px;}
-.table-row{padding:.75rem 1.1rem;border-bottom:1px solid #1E2226;display:grid;grid-template-columns:2fr 70px 110px 110px 1fr 170px;gap:1rem;align-items:center;min-width:760px;}
+.table-header{padding:.75rem 1.1rem;border-bottom:1px solid #1E2226;display:grid;grid-template-columns:2fr 70px 110px 110px 1fr 260px;gap:1rem;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#44484F;min-width:900px;}
+.table-row{padding:.75rem 1.1rem;border-bottom:1px solid #1E2226;display:grid;grid-template-columns:2fr 70px 110px 110px 1fr 260px;gap:1rem;align-items:center;min-width:900px;}
 .table-row:last-child{border-bottom:none;}
 .table-row:hover{background:#1E2226;}
+.table-row.deleted{opacity:.45;}
 .tr-uid{font-size:11px;color:#44484F;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .tr-email{font-size:13px;color:#88867F;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .tr-plan{font-size:11px;padding:2px 8px;border-radius:20px;text-align:center;font-weight:500;display:inline-block;}
 .tr-plan.pro{background:#251A10;color:#C4956A;}
 .tr-plan.free{background:#1E2226;color:#44484F;}
 .tr-date{font-size:11px;color:#44484F;font-family:monospace;}
-.tr-actions{display:flex;gap:.4rem;}
-.plan-btn{padding:.35rem .7rem;border-radius:20px;border:1px solid #22262B;background:transparent;font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s;color:#88867F;}
+.tr-deleted-label{font-size:11px;color:#44484F;font-style:italic;}
+.tr-actions{display:flex;gap:.35rem;flex-wrap:wrap;}
+.plan-btn{padding:.35rem .65rem;border-radius:20px;border:1px solid #22262B;background:transparent;font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s;color:#88867F;}
 .plan-btn:hover{border-color:#3D6B74;color:#6BA8B4;}
 .plan-btn.active{cursor:default;}
 .plan-btn.pro.active{background:#251A10;color:#C4956A;border-color:rgba(196,149,106,.4);}
 .plan-btn.free.active{background:#1E2226;color:#88867F;border-color:#2C3138;}
+.plan-btn.cancel-sub{color:#C4956A;border-color:rgba(196,149,106,.3);}
+.plan-btn.cancel-sub:hover{border-color:#C4956A;}
+.plan-btn.delete{color:#b04040;border-color:rgba(176,64,64,.3);}
+.plan-btn.delete:hover{border-color:#b04040;}
 .empty{padding:2rem;text-align:center;color:#44484F;font-size:13px;}
 
 /* TOAST */
@@ -191,19 +197,27 @@ function renderTable(users) {
     el.innerHTML = '<div class="empty">No users found</div>';
     return;
   }
-  el.innerHTML = users.map(u => `
-    <div class="table-row">
-      <div class="tr-email">${esc(u.email || '—')}</div>
+  el.innerHTML = users.map(u => {
+    const isDeleted = !!u.deleted_at;
+    const actions = isDeleted
+      ? `<span class="tr-deleted-label">🗑 Deleted ${esc(fmtDate(u.deleted_at))}</span>`
+      : `
+        <button class="plan-btn pro ${u.plan === 'pro' ? 'active' : ''}" ${u.plan === 'pro' ? 'disabled' : ''} data-action="set-plan" data-uid="${esc(u.uid)}" data-plan="pro">Set Pro</button>
+        <button class="plan-btn free ${u.plan === 'free' ? 'active' : ''}" ${u.plan === 'free' ? 'disabled' : ''} data-action="set-plan" data-uid="${esc(u.uid)}" data-plan="free">Set Free</button>
+        ${u.plan === 'pro' && u.subscription_id ? `<button class="plan-btn cancel-sub" data-action="cancel-sub" data-uid="${esc(u.uid)}">Cancel sub</button>` : ''}
+        <button class="plan-btn delete" data-action="delete" data-uid="${esc(u.uid)}">Delete</button>
+      `;
+    return `
+    <div class="table-row ${isDeleted ? 'deleted' : ''}">
+      <div class="tr-email">${isDeleted ? '🗑 ' : ''}${esc(u.email || '—')}</div>
       <div><span class="tr-plan ${u.plan === 'pro' ? 'pro' : 'free'}">${esc(u.plan.toUpperCase())}</span></div>
       <div class="tr-date">${esc(fmtDate(u.created_at))}</div>
       <div class="tr-date">${esc(fmtDate(u.updated_at))}</div>
       <div class="tr-uid">${esc(u.uid)}</div>
-      <div class="tr-actions">
-        <button class="plan-btn pro ${u.plan === 'pro' ? 'active' : ''}" ${u.plan === 'pro' ? 'disabled' : ''} data-uid="${esc(u.uid)}" data-plan="pro">Set Pro</button>
-        <button class="plan-btn free ${u.plan === 'free' ? 'active' : ''}" ${u.plan === 'free' ? 'disabled' : ''} data-uid="${esc(u.uid)}" data-plan="free">Set Free</button>
-      </div>
+      <div class="tr-actions">${actions}</div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 // Delegated listener instead of inline onclick: an HTML-escaped value can still
@@ -212,7 +226,10 @@ function renderTable(users) {
 document.getElementById('usersTable').addEventListener('click', (e) => {
   const btn = e.target.closest('button[data-uid]');
   if (!btn || btn.disabled) return;
-  setPlan(btn.dataset.uid, btn.dataset.plan);
+  const { action, uid, plan } = btn.dataset;
+  if (action === 'set-plan') setPlan(uid, plan);
+  else if (action === 'cancel-sub') cancelSubscription(uid);
+  else if (action === 'delete') deleteAccount(uid);
 });
 
 function filterUsers() {
@@ -240,6 +257,52 @@ async function setPlan(uid, plan) {
     });
     if (res.ok) {
       toast(plan === 'pro' ? '✦ Pro granted' : '✕ Set to free');
+      await loadData();
+      filterUsers();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      toast('Error: ' + (data.error || res.status), true);
+    }
+  } catch(e) {
+    toast('Error: ' + e.message, true);
+  }
+}
+
+async function cancelSubscription(uid) {
+  const u = allUsers.find(x => x.uid === uid);
+  const label = (u && u.email) ? u.email : uid;
+  if (!confirm(`Cancel subscription for ${label}?`)) return;
+
+  try {
+    const res = await fetch(PROXY + '/admin/users/' + uid + '/cancel-subscription', {
+      method: 'POST',
+      headers: { 'x-admin-password': adminPwd }
+    });
+    if (res.ok) {
+      toast('✕ Subscription cancelled');
+      await loadData();
+      filterUsers();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      toast('Error: ' + (data.error || res.status), true);
+    }
+  } catch(e) {
+    toast('Error: ' + e.message, true);
+  }
+}
+
+async function deleteAccount(uid) {
+  const u = allUsers.find(x => x.uid === uid);
+  const label = (u && u.email) ? u.email : uid;
+  if (!confirm(`Delete account for ${label}? Data stays in DB.`)) return;
+
+  try {
+    const res = await fetch(PROXY + '/admin/users/' + uid, {
+      method: 'DELETE',
+      headers: { 'x-admin-password': adminPwd }
+    });
+    if (res.ok) {
+      toast('🗑 Account deleted');
       await loadData();
       filterUsers();
     } else {

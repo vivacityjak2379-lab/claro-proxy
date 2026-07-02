@@ -17,6 +17,19 @@ if (!ADMIN_PASSWORD) {
   process.exit(1);
 }
 
+const stripe = process.env.STRIPE_SECRET_KEY ? require('stripe')(process.env.STRIPE_SECRET_KEY) : null;
+
+// Best-effort cancel: used wherever an account is deleted/downgraded so a
+// customer never keeps being billed for an account that's been removed.
+async function cancelStripeSubscription(subscriptionId) {
+  if (!subscriptionId || !stripe) return;
+  try {
+    await stripe.subscriptions.cancel(subscriptionId);
+  } catch (err) {
+    console.error(`Failed to cancel Stripe subscription ${subscriptionId}:`, err.message);
+  }
+}
+
 // ─── MAIL (Resend HTTP API — Railway blocks outbound SMTP ports) ────────────
 
 if (!RESEND_API_KEY) {
@@ -77,6 +90,8 @@ async function initDB() {
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT`);
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT FALSE`);
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_token TEXT`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name TEXT`);
   console.log('✓ DB ready');
 }
 
@@ -206,7 +221,6 @@ app.post('/webhook', async (req, res) => {
 
   let event;
   try {
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
     event = stripe.webhooks.constructEvent(
       req.body,
       req.headers['stripe-signature'],
@@ -447,9 +461,118 @@ app.post('/auth/login', async (req, res) => {
     const match = await bcrypt.compare(password, user.password_hash);
     if (!match) return res.status(401).json({ error: 'Invalid email or password' });
 
-    res.json({ ok: true, uid: user.uid, email: user.email, plan: user.plan });
+    if (user.deleted_at) {
+      return res.status(403).json({ error: 'This account has been deleted. Contact support to restore it.' });
+    }
+
+    res.json({ ok: true, uid: user.uid, email: user.email, plan: user.plan, emailVerified: user.email_verified });
   } catch (err) {
     console.error('/auth/login error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── SELF-SERVICE ACCOUNT MANAGEMENT ─────────────────────────────────────────
+// Same weak-identity caveat as everywhere else in this file: uid alone isn't a
+// secret. Where an account has a password set, we require it before any of
+// these change/destroy anything; anonymous-only Pro accounts (paid via Stripe
+// checkout without ever creating a password) fall back to the weaker uid-based
+// checks already used throughout, since there's no stronger credential to ask for.
+
+app.put('/auth/profile', async (req, res) => {
+  const { uid, displayName } = req.body;
+  if (!isValidUid(uid)) return res.status(400).json({ error: 'Valid uid required' });
+  const name = typeof displayName === 'string' ? displayName.trim() : '';
+  if (!name || name.length > 60) {
+    return res.status(400).json({ error: 'Display name must be 1-60 characters' });
+  }
+
+  try {
+    await upsertUser(uid, { display_name: name });
+    res.json({ ok: true, displayName: name });
+  } catch (err) {
+    console.error('/auth/profile error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/auth/password', async (req, res) => {
+  const { uid, currentPassword, newPassword } = req.body;
+  if (!uid) return res.status(400).json({ error: 'uid required' });
+  if (!newPassword || newPassword.length < 6) {
+    return res.status(400).json({ error: 'New password must be at least 6 characters' });
+  }
+
+  try {
+    const user = await getUser(uid);
+    if (!user || !user.password_hash) {
+      return res.status(400).json({ error: 'No password set for this account' });
+    }
+    const match = await bcrypt.compare(currentPassword || '', user.password_hash);
+    if (!match) return res.status(401).json({ error: 'Current password is incorrect' });
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await pool.query(
+      'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE uid = $2',
+      [passwordHash, uid]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('/auth/password error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/auth/cancel-subscription', async (req, res) => {
+  const { uid, email, password } = req.body;
+  if (!uid || !isValidEmail(email)) {
+    return res.status(400).json({ error: 'uid and email required' });
+  }
+
+  try {
+    const user = await getUser(uid);
+    if (!user || user.email !== email) {
+      return res.status(404).json({ error: 'No matching account found' });
+    }
+    if (user.password_hash) {
+      const match = await bcrypt.compare(password || '', user.password_hash);
+      if (!match) return res.status(401).json({ error: 'Password is incorrect' });
+    }
+    if (!user.subscription_id) {
+      return res.status(400).json({ error: 'No active subscription' });
+    }
+
+    await cancelStripeSubscription(user.subscription_id);
+    await upsertUser(uid, { plan: 'free', subscription_id: null });
+    res.json({ ok: true, plan: 'free' });
+  } catch (err) {
+    console.error('/auth/cancel-subscription error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/auth/account', async (req, res) => {
+  const { uid, password } = req.body;
+  if (!uid) return res.status(400).json({ error: 'uid required' });
+
+  try {
+    const user = await getUser(uid);
+    if (!user) return res.status(404).json({ error: 'Account not found' });
+    if (user.password_hash) {
+      const match = await bcrypt.compare(password || '', user.password_hash);
+      if (!match) return res.status(401).json({ error: 'Password is incorrect' });
+    }
+
+    await cancelStripeSubscription(user.subscription_id);
+    await pool.query(
+      `UPDATE users
+       SET deleted_at = NOW(), plan = 'free', stripe_customer_id = NULL, subscription_id = NULL, updated_at = NOW()
+       WHERE uid = $1`,
+      [uid]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('/auth/account error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -492,6 +615,43 @@ app.post('/admin/users/:uid/plan', adminAuth, async (req, res) => {
     await upsertUser(uid, { plan });
     console.log(`Admin: set ${uid} to ${plan}`);
     res.json({ ok: true, uid, plan });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/admin/users/:uid/cancel-subscription', adminAuth, async (req, res) => {
+  const { uid } = req.params;
+  try {
+    const user = await getUser(uid);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (!user.subscription_id) {
+      return res.status(400).json({ error: 'No active subscription for this user' });
+    }
+    await cancelStripeSubscription(user.subscription_id);
+    await upsertUser(uid, { plan: 'free', subscription_id: null });
+    console.log(`Admin: cancelled subscription for ${uid}`);
+    res.json({ ok: true, uid, plan: 'free' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/admin/users/:uid', adminAuth, async (req, res) => {
+  const { uid } = req.params;
+  try {
+    const user = await getUser(uid);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    await cancelStripeSubscription(user.subscription_id);
+    await pool.query(
+      `UPDATE users
+       SET deleted_at = NOW(), plan = 'free', stripe_customer_id = NULL, subscription_id = NULL, updated_at = NOW()
+       WHERE uid = $1`,
+      [uid]
+    );
+    console.log(`Admin: soft-deleted ${uid}`);
+    res.json({ ok: true, uid });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
