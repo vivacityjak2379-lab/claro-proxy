@@ -420,17 +420,17 @@ kbd{background:var(--s2);border:1px solid var(--bd);border-radius:4px;padding:1p
 
     <div class="slabel" id="lbl-webfeatures">Web features</div>
     <div class="companions">
-      <div class="ci" onclick="toggleFocus()">
+      <div class="ci" id="ci-focus" onclick="toggleFocus()">
         <div class="ciicon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8" opacity=".4"/></svg></div>
         <div class="citext"><div class="ciname" id="lbl-focus">Focus mode</div><div class="cisub" id="lbl-focus-sub">minimal view</div></div>
         <div class="webbadge">web</div>
       </div>
-      <div class="ci" onclick="toggleRP()">
+      <div class="ci" id="ci-insights" onclick="toggleRP()">
         <div class="ciicon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
         <div class="citext"><div class="ciname" id="lbl-insights">Insights</div><div class="cisub" id="lbl-insights-sub">mood & patterns</div></div>
         <div class="webbadge" id="insightsBadge">✦</div>
       </div>
-      <div class="ci" onclick="exportChat()">
+      <div class="ci" id="ci-export" onclick="exportChat()">
         <div class="ciicon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
         <div class="citext"><div class="ciname" id="lbl-export">Export journal</div><div class="cisub" id="lbl-export-sub">save as text</div></div>
         <div class="webbadge new">new</div>
@@ -480,6 +480,11 @@ kbd{background:var(--s2);border:1px solid var(--bd);border-radius:4px;padding:1p
         <button class="hbtn" id="rpBtn" onclick="toggleRP()">Insights ✦</button>
         <a href="/" class="hbtn">← Home</a>
       </div>
+    </div>
+
+    <div id="guestBanner" style="display:none;align-items:center;justify-content:space-between;gap:1rem;padding:.6rem 1rem;background:var(--al);border-bottom:1px solid var(--am);font-size:12.5px;color:var(--ac);flex-shrink:0;">
+      <span>✦ Sign up free to unlock Insights, Focus mode and journal export</span>
+      <button onclick="openSignUpFromProfile()" style="flex-shrink:0;padding:.4rem 1rem;border-radius:20px;border:none;background:var(--ac);color:#fff;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;">Sign up</button>
     </div>
 
     <div class="content">
@@ -650,6 +655,22 @@ kbd{background:var(--s2);border:1px solid var(--bd);border-radius:4px;padding:1p
       <button id="authResendBtn" onclick="resendVerificationEmail()" style="width:100%;padding:.85rem;border-radius:50px;background:transparent;color:var(--ac);border:1.5px solid var(--ac);font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity .18s;margin-bottom:.6rem;">Resend email</button>
       <button onclick="authContinueAfterSignup()" style="width:100%;padding:.85rem;border-radius:50px;background:var(--tx);color:var(--sf);border:none;font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity .18s;">Continue</button>
     </div>
+    <div id="authPostSignout" style="display:none;">
+      <div style="font-family:'Cormorant Garamond',serif;font-weight:300;font-size:28px;color:var(--tx);margin-bottom:.4rem;">Signed out</div>
+      <div style="font-size:13px;color:var(--t2);line-height:1.5;margin-bottom:1.5rem;">Sign back in to continue where you left off, or keep exploring as a guest.</div>
+      <button onclick="reopenSignInAfterSignout()" style="width:100%;padding:.85rem;border-radius:50px;background:var(--tx);color:var(--sf);border:none;font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity .18s;margin-bottom:.6rem;">Sign back in</button>
+      <button onclick="continueAsGuest()" style="width:100%;padding:.85rem;border-radius:50px;background:transparent;color:var(--ac);border:1.5px solid var(--ac);font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity .18s;">Continue as Guest</button>
+    </div>
+  </div>
+</div>
+
+<!-- ACCOUNT REQUIRED MODAL -->
+<div id="acctReqModal" style="position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;">
+  <div style="background:var(--sf);border-radius:20px;padding:1.75rem;max-width:340px;width:90%;text-align:center;">
+    <div style="font-family:'Cormorant Garamond',serif;font-weight:300;font-size:22px;color:var(--tx);margin-bottom:.5rem;">Sign up to unlock this</div>
+    <div style="font-size:13px;color:var(--t2);line-height:1.5;margin-bottom:1.5rem;">This feature requires an account.</div>
+    <button onclick="closeAcctReqModal();openSignUpFromProfile();" style="width:100%;padding:.8rem;border-radius:50px;background:var(--ac);color:#fff;border:none;font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:.6rem;">Sign up — free</button>
+    <button onclick="closeAcctReqModal()" style="width:100%;padding:.7rem;border-radius:50px;background:transparent;color:var(--t3);border:none;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;">Maybe later</button>
   </div>
 </div>
 
@@ -858,9 +879,10 @@ function updateUI(){
   }
   // User
   const nameEl = document.getElementById('userName');
-  if(nameEl) nameEl.childNodes[0].textContent = (userName||'You')+' ';
+  const fallbackName = isGuest() ? 'Guest' : 'You';
+  if(nameEl) nameEl.childNodes[0].textContent = (userName||fallbackName)+' ';
   const avEl = document.getElementById('userAv');
-  if(avEl) avEl.textContent = userName ? userName[0].toUpperCase() : '?';
+  if(avEl) avEl.textContent = userName ? userName[0].toUpperCase() : (isGuest() ? 'G' : '?');
   const proTag = document.getElementById('proTag');
   if(proTag) proTag.style.display = plan==='pro' ? 'inline' : 'none';
   // Upgrade label
@@ -1385,8 +1407,10 @@ function maybeShowAuthPrompt(cb){
 function setAuthMode(mode){
   const form = document.getElementById('authForm');
   const checkEmail = document.getElementById('authCheckEmail');
+  const postSignout = document.getElementById('authPostSignout');
   if(form) form.style.display = '';
   if(checkEmail) checkEmail.style.display = 'none';
+  if(postSignout) postSignout.style.display = 'none';
   const title = document.getElementById('authTitle');
   const sub = document.getElementById('authSubtitle');
   const signupBtn = document.getElementById('authSignupBtn');
@@ -1422,13 +1446,31 @@ function openSignIn(){
 
 function updateAuthUI(){
   const sub = document.getElementById('userSub');
-  if(!sub) return;
-  const email = localStorage.getItem('claro_email');
-  if(email){
-    sub.innerHTML = email + ' · <span class="authlink" onclick="event.stopPropagation();signOut()">Sign out</span>';
-  } else {
-    sub.innerHTML = 'speakclaro.co/app · <span class="authlink" onclick="event.stopPropagation();openSignIn()">Sign in</span>';
+  if(sub){
+    const email = localStorage.getItem('claro_email');
+    if(email){
+      sub.innerHTML = email + ' · <span class="authlink" onclick="event.stopPropagation();signOut()">Sign out</span>';
+    } else {
+      sub.innerHTML = 'Guest session · <span class="authlink" onclick="event.stopPropagation();openSignIn()">Sign in</span>';
+    }
   }
+  updateUI();
+  updateGuestUI();
+}
+
+function updateGuestUI(){
+  const guest = isGuest();
+  const banner = document.getElementById('guestBanner');
+  if(banner) banner.style.display = guest ? 'flex' : 'none';
+
+  ['ci-focus','ci-insights','ci-export'].forEach(function(id){
+    const el = document.getElementById(id);
+    if(el){ el.style.opacity = guest ? '.45' : ''; }
+  });
+  ['focusBtn','rpBtn'].forEach(function(id){
+    const el = document.getElementById(id);
+    if(el){ el.style.opacity = guest ? '.45' : ''; }
+  });
 }
 
 function signOut(){
@@ -1439,7 +1481,54 @@ function signOut(){
   updateUI();
   updateAuthUI();
   toast('Signed out');
+  showPostSignoutScreen();
+}
+
+function showPostSignoutScreen(){
+  const ov = document.getElementById('authOverlay');
+  if(!ov) return;
+  document.getElementById('authForm').style.display = 'none';
+  document.getElementById('authCheckEmail').style.display = 'none';
+  document.getElementById('authPostSignout').style.display = '';
+  _authResolve = null;
+  ov.style.display = 'flex';
+  ov.style.opacity = '0';
+  requestAnimationFrame(function(){
+    ov.style.transition = 'opacity .4s';
+    ov.style.opacity = '1';
+  });
+}
+
+function reopenSignInAfterSignout(){
   openSignIn();
+}
+
+function continueAsGuest(){
+  const newUid = 'claro_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
+  USER_ID = newUid;
+  localStorage.setItem('claro_uid', newUid);
+  localStorage.removeItem('claro_name');
+  userName = '';
+  registerUser();
+  newChat();
+  closeAuthPrompt();
+  updateUI();
+  updateAuthUI();
+  toast('Continuing as Guest');
+}
+
+function isGuest(){
+  return !localStorage.getItem('claro_email');
+}
+
+function showAccountRequiredModal(){
+  const el = document.getElementById('acctReqModal');
+  if(el) el.style.display = 'flex';
+}
+
+function closeAcctReqModal(){
+  const el = document.getElementById('acctReqModal');
+  if(el) el.style.display = 'none';
 }
 
 async function syncPlanFromServer(){
@@ -1674,12 +1763,14 @@ function toggleSB(){
 }
 
 function toggleRP(){
+  if(isGuest()){ showAccountRequiredModal(); return; }
   rpOpen = !rpOpen;
   document.getElementById('rpanel').classList.toggle('hidden', !rpOpen);
   document.getElementById('rpBtn').classList.toggle('on', rpOpen);
 }
 
 function toggleFocus(){
+  if(isGuest()){ showAccountRequiredModal(); return; }
   focusOn = !focusOn;
   document.getElementById('msgs').classList.toggle('focus', focusOn);
   document.getElementById('focusBtn').classList.toggle('on', focusOn);
@@ -2008,6 +2099,7 @@ function stopVoice(){
 
 // ═══ TOOLS ═══
 function exportChat(){
+  if(isGuest()){ showAccountRequiredModal(); return; }
   const msgs = document.querySelectorAll('.mrow');
   const lines = [];
   msgs.forEach(function(row){
